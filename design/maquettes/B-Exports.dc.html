@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kontrol B – Exports et sauvegarde</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8B7CFF}a:hover{color:#A99EFF}
+.k{--bg:#EEF1F6;--surface:#FFFFFF;--surface2:#F3F5F9;--ink:#0B1220;--ink2:#4A5568;--line:#D5DBE5;--accent:#5B47E0;--on-accent:#FFFFFF;--acc-bg:#E6E2FF;--r:#B91C1C;--o:#B45309;--b:#1D4ED8;--g:#15803D;--g-bg:#E1F5E8;--n:#4B5563;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.k.dark{--bg:#0B1220;--surface:#131C2E;--surface2:#1B263B;--ink:#EEF2F8;--ink2:#A3B0C4;--line:#26334A;--accent:#8B7CFF;--on-accent:#0B1220;--acc-bg:#2A2558;--r:#FF8A8A;--o:#FDBA74;--b:#8DB4FF;--g:#6EE7A0;--g-bg:#12331F;--n:#B4BCC8}
+.mono{font-family:'IBM Plex Mono',monospace}
+.fmt{flex:0 0 auto;height:48px;min-width:72px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;padding:0 12px}
+.ex{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line)}
+</style>
+</helmet>
+<div class="k {{mode}}" style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; padding-top: 54px">
+  <header style="display: flex; align-items: center; gap: 4px; padding: 4px 16px 0 6px">
+    <a href="B-Checklist.dc.html" aria-label="Retour au chantier" style="width: 48px; height: 48px; color: var(--ink); display: flex; align-items: center; justify-content: center">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="min-width: 0">
+      <div class="mono" style="font-size: 16px; color: var(--ink2)">CAMP NORD · B12</div>
+      <div style="font-size: 20px; font-weight: 700; line-height: 1.2">Exports et sauvegarde</div>
+    </div>
+  </header>
+
+  <section aria-label="Sauvegarde Google Drive" style="margin: 14px 16px 0 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+    <div style="display: flex; gap: 12px; align-items: center; padding: 14px">
+      <span style="width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; background: var(--g-bg); color: var(--g); display: flex; align-items: center; justify-content: center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19 10a4 4 0 0 1 0 8z"/><path d="M9.5 13.5l2 2 3.5-3.5"/></svg>
+      </span>
+      <div style="min-width: 0">
+        <div style="font-size: 17px; font-weight: 700">Sauvegarde Drive à jour</div>
+        <div class="mono" style="font-size: 16px; color: var(--ink2)">07/11/2026 · 16:42</div>
+      </div>
+    </div>
+    <dl style="margin: 0">
+      <div class="ex"><dt style="flex: 0 0 96px; font-size: 16px; color: var(--ink2)">Dossier</dt><dd class="mono" style="margin: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Kontrol/B12-CampNord</dd></div>
+      <div class="ex"><dt style="flex: 0 0 96px; font-size: 16px; color: var(--ink2)">Contenu</dt><dd style="margin: 0; font-size: 16px">58 points · 10 réserves · 23 photos</dd></div>
+      <div class="ex" style="justify-content: space-between">
+        <label for="autoSave" style="font-size: 16px; font-weight: 600">Sauvegarde automatique</label>
+        <input id="autoSave" type="checkbox" checked style="width: 52px; height: 32px; accent-color: var(--accent); margin: 0">
+      </div>
+    </dl>
+    <div style="padding: 0 14px 14px 14px">
+      <button style="width: 100%; height: 52px; border-radius: 14px; border: 1px solid var(--accent); background: var(--acc-bg); color: var(--ink); font-family: inherit; font-size: 17px; font-weight: 600">Sauvegarder maintenant</button>
+    </div>
+  </section>
+
+  <h2 style="margin: 20px 16px 8px 16px; font-size: 17px; font-weight: 700">Exporter</h2>
+  <section aria-label="Exports" style="margin: 0 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+    <sc-for list="{{exports}}" as="e" hint-placeholder-count="4">
+      <div class="ex" style="border-top-color: {{e.bt}}">
+        <div style="flex: 1 1 auto; min-width: 0">
+          <div style="font-size: 16px; font-weight: 600; line-height: 1.3">{{e.titre}}</div>
+          <div style="font-size: 16px; color: var(--ink2)">{{e.sub}}</div>
+        </div>
+        <button class="fmt" aria-label="{{e.titre}} en PDF">PDF</button>
+        <button class="fmt" aria-label="{{e.titre}} en Excel">XLSX</button>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sombre":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const raw = [
+      { titre: 'Points non soldés', sub: '24 points · dont 2 bloquants' },
+      { titre: 'Liste des réserves', sub: '10 réserves · toutes' },
+      { titre: 'Réserves par entreprise', sub: '3 entreprises · 1 fichier chacune' },
+      { titre: 'État des jalons', sub: '8 jalons · 1 en retard' }
+    ];
+    return {
+      mode: this.props.sombre === false ? '' : 'dark',
+      exports: raw.map((e, i) => ({ ...e, bt: i === 0 ? 'transparent' : 'var(--line)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

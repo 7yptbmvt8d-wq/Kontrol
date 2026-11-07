@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kontrol B – Réserves</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8B7CFF}a:hover{color:#A99EFF}
+.k{--bg:#EEF1F6;--surface:#FFFFFF;--surface2:#F3F5F9;--ink:#0B1220;--ink2:#4A5568;--line:#D5DBE5;--accent:#5B47E0;--on-accent:#FFFFFF;--r:#B91C1C;--r-bg:#FDE8E8;--o:#B45309;--o-bg:#FDF0E1;--b:#1D4ED8;--b-bg:#E3ECFD;--g:#15803D;--g-bg:#E1F5E8;--n:#4B5563;--n-bg:#ECEEF1;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.k.dark{--bg:#0B1220;--surface:#131C2E;--surface2:#1B263B;--ink:#EEF2F8;--ink2:#A3B0C4;--line:#26334A;--accent:#8B7CFF;--on-accent:#0B1220;--r:#FF8A8A;--r-bg:#3A1A22;--o:#FDBA74;--o-bg:#3A2716;--b:#8DB4FF;--b-bg:#172A4D;--g:#6EE7A0;--g-bg:#12331F;--n:#B4BCC8;--n-bg:#232C3A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.tab{flex:1 1 auto;height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;text-decoration:none;color:var(--ink2);font-size:16px;font-weight:600;padding:0 8px}
+.tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line)}
+.fchip{flex:0 0 auto;height:48px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;gap:6px;padding:0 14px}
+.st{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;font-size:16px;font-weight:600;white-space:nowrap}
+.st::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.st-r{background:var(--r-bg);color:var(--r)}.st-o{background:var(--o-bg);color:var(--o)}.st-b{background:var(--b-bg);color:var(--b)}.st-g{background:var(--g-bg);color:var(--g)}.st-n{background:var(--n-bg);color:var(--n)}
+</style>
+</helmet>
+<div class="k {{mode}}" style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; padding-top: 54px">
+  <header style="display: flex; align-items: center; gap: 4px; padding: 4px 16px 0 6px">
+    <button aria-label="Retour à mes chantiers" style="width: 48px; height: 48px; border: 0; background: transparent; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div style="min-width: 0">
+      <div class="mono" style="font-size: 16px; color: var(--ink2)">CAMP NORD · B12 · 62 %</div>
+      <div style="font-size: 20px; font-weight: 700; line-height: 1.2">Réhabilitation bâtiment 12</div>
+    </div>
+  </header>
+
+  <nav aria-label="Sections du chantier" style="display: flex; gap: 2px; margin: 12px 16px 0 16px; padding: 4px; border-radius: 16px; background: var(--surface2)">
+    <a href="#" class="tab">Checklist</a>
+    <a href="#" class="tab on" aria-current="page">Réserves</a>
+    <a href="#" class="tab">Jalons</a>
+    <a href="#" class="tab">Intervenants</a>
+  </nav>
+
+  <div style="display: flex; gap: 8px; padding: 12px 16px 0 16px; overflow: hidden">
+    <button class="fchip" style="background: var(--accent); color: var(--on-accent); border-color: var(--accent)">Toutes <span class="mono">10</span></button>
+    <button class="fchip"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--r)"></span>Retard <span class="mono">2</span></button>
+    <button class="fchip"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--o)"></span>Relancées <span class="mono">2</span></button>
+    <button class="fchip"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--b)"></span>Ouvertes <span class="mono">3</span></button>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 8px 16px 0 16px">
+    <button class="fchip">Lot <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="fchip">Entreprise <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="fchip" aria-label="Trier par échéance" style="margin-left: auto; padding: 0 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M14 6h7M14 12h5M14 18h3"/></svg></button>
+  </div>
+
+  <ul style="list-style: none; margin: 0; padding: 14px 16px 0 16px; display: flex; flex-direction: column; gap: 8px">
+    <sc-for list="{{reserves}}" as="r" hint-placeholder-count="5">
+      <li>
+        <a href="#" style="display: flex; gap: 12px; padding: 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--ink)">
+          <div aria-hidden="true" style="width: 64px; height: 64px; flex: 0 0 64px; border-radius: 12px; background: var(--surface2); color: var(--ink2); display: flex; align-items: center; justify-content: center">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></svg>
+          </div>
+          <div style="flex: 1 1 auto; min-width: 0">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+              <span class="mono" style="font-size: 16px; color: var(--ink2)">{{r.ref}} · {{r.lot}}</span>
+              <span class="st {{r.cls}}">{{r.statut}}</span>
+            </div>
+            <div style="font-size: 17px; font-weight: 600; line-height: 1.3; margin-top: 4px">{{r.desc}}</div>
+            <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 16px">
+              <span style="color: var(--ink2)">{{r.ent}}</span>
+              <span class="mono" style="color: {{r.dateCol}}; font-weight: 600">{{r.date}}</span>
+            </div>
+          </div>
+        </a>
+      </li>
+    </sc-for>
+  </ul>
+
+  <button aria-label="Nouvelle réserve" style="position: absolute; right: 20px; bottom: 50px; width: 64px; height: 64px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.35)">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sombre":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      r: { statut: 'En retard', cls: 'st-r', dateCol: 'var(--r)' },
+      o: { statut: 'Relancée', cls: 'st-o', dateCol: 'var(--ink2)' },
+      b: { statut: 'Ouverte', cls: 'st-b', dateCol: 'var(--ink2)' },
+      g: { statut: 'Levée', cls: 'st-g', dateCol: 'var(--ink2)' },
+      n: { statut: 'Sans objet', cls: 'st-n', dateCol: 'var(--ink2)' }
+    };
+    const raw = [
+      { ref: 'R-01', lot: 'GO', ent: 'Moretti GO', desc: 'Fissure sur enduit, façade nord RDC', st: 'r', date: '28/10 · +10 j' },
+      { ref: 'R-02', lot: 'CVC', ent: 'CVC Lanterna', desc: 'Calorifuge manquant, réseau ECS', st: 'r', date: '05/11 · +2 j' },
+      { ref: 'R-06', lot: 'ELE', ent: 'Volta Élec', desc: 'BAES non fonctionnel, circulation R+1', st: 'o', date: '10/11' },
+      { ref: 'R-05', lot: 'CVC', ent: 'CVC Lanterna', desc: 'Grille de reprise mal fixée, bureau 104', st: 'b', date: '20/11' },
+      { ref: 'R-07', lot: 'GO', ent: 'Moretti GO', desc: 'Ragréage défectueux, sanitaires R+1', st: 'g', date: 'levée 30/10' },
+      { ref: 'R-10', lot: 'GO', ent: 'Moretti GO', desc: 'Traces de peinture sur menuiseries', st: 'n', date: '—' }
+    ];
+    return {
+      mode: this.props.sombre === false ? '' : 'dark',
+      reserves: raw.map((r) => ({ ...r, ...S[r.st] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

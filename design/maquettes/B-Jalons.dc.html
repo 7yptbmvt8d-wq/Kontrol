@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kontrol B – Jalons</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8B7CFF}a:hover{color:#A99EFF}
+.k{--bg:#EEF1F6;--surface:#FFFFFF;--surface2:#F3F5F9;--ink:#0B1220;--ink2:#4A5568;--line:#D5DBE5;--accent:#5B47E0;--on-accent:#FFFFFF;--r:#B91C1C;--r-bg:#FDE8E8;--o:#B45309;--o-bg:#FDF0E1;--b:#1D4ED8;--b-bg:#E3ECFD;--g:#15803D;--g-bg:#E1F5E8;--n:#4B5563;--n-bg:#ECEEF1;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.k.dark{--bg:#0B1220;--surface:#131C2E;--surface2:#1B263B;--ink:#EEF2F8;--ink2:#A3B0C4;--line:#26334A;--accent:#8B7CFF;--on-accent:#0B1220;--r:#FF8A8A;--r-bg:#3A1A22;--o:#FDBA74;--o-bg:#3A2716;--b:#8DB4FF;--b-bg:#172A4D;--g:#6EE7A0;--g-bg:#12331F;--n:#B4BCC8;--n-bg:#232C3A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.tab{flex:1 1 auto;height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;text-decoration:none;color:var(--ink2);font-size:16px;font-weight:600;padding:0 8px}
+.tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line)}
+.jl{display:flex;gap:10px}
+.jl.late .jb{background:var(--r-bg);box-shadow:inset 0 0 0 2px var(--r)}
+.jb{flex:1 1 auto;min-width:0;border-radius:14px;padding:8px 12px;margin-bottom:6px}
+</style>
+</helmet>
+<div class="k {{mode}}" style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; padding-top: 54px">
+  <header style="display: flex; align-items: center; gap: 4px; padding: 4px 16px 0 6px">
+    <a href="B-Accueil.dc.html" aria-label="Retour à mes chantiers" style="width: 48px; height: 48px; color: var(--ink); display: flex; align-items: center; justify-content: center">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="min-width: 0">
+      <div class="mono" style="font-size: 16px; color: var(--ink2)">CAMP NORD · B12 · 62 %</div>
+      <div style="font-size: 20px; font-weight: 700; line-height: 1.2">Réhabilitation bâtiment 12</div>
+    </div>
+  </header>
+
+  <nav aria-label="Sections du chantier" style="display: flex; gap: 2px; margin: 12px 16px 0 16px; padding: 4px; border-radius: 16px; background: var(--surface2)">
+    <a href="B-Checklist.dc.html" class="tab">Checklist</a>
+    <a href="B-Reserves.dc.html" class="tab">Réserves</a>
+    <a href="#" class="tab on" aria-current="page">Jalons</a>
+    <a href="#" class="tab">Intervenants</a>
+  </nav>
+
+  <div style="margin: 12px 16px 0 16px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line)">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 16px; color: var(--ink2)">Délai d’exécution · 8 mois</span>
+      <span class="mono" style="font-size: 16px; font-weight: 600">J+96 / 243</span>
+    </div>
+    <div style="position: relative; height: 10px; border-radius: 999px; background: var(--surface2); margin-top: 10px">
+      <div style="height: 10px; width: 40%; border-radius: 999px; background: var(--accent)"></div>
+      <div aria-hidden="true" style="position: absolute; left: 62%; top: -4px; width: 2px; height: 18px; background: var(--ink)"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 16px">
+      <span style="color: var(--ink2)">Temps 40 % · travaux 62 %</span>
+      <span class="mono">fin 03/04/27</span>
+    </div>
+  </div>
+
+  <ol style="list-style: none; margin: 14px 16px 0 16px; padding: 0">
+    <sc-for list="{{jalons}}" as="j" hint-placeholder-count="7">
+      <li class="jl {{j.cls}}">
+        <div class="mono" style="flex: 0 0 62px; padding-top: 9px; font-size: 16px; font-weight: 600; color: {{j.dateCol}}">{{j.date}}</div>
+        <div style="flex: 0 0 12px; display: flex; flex-direction: column; align-items: center">
+          <span style="width: 12px; height: 12px; border-radius: 50%; margin-top: 14px; background: {{j.col}}"></span>
+          <span style="flex: 1 1 auto; width: 2px; background: var(--line)"></span>
+        </div>
+        <div class="jb">
+          <div style="font-size: 16px; font-weight: 600; line-height: 1.3">{{j.titre}}</div>
+          <div style="font-size: 16px; color: {{j.subCol}}">{{j.sub}}</div>
+        </div>
+      </li>
+    </sc-for>
+  </ol>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sombre":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      ok: { col: 'var(--g)', dateCol: 'var(--ink2)', subCol: 'var(--ink2)', cls: '' },
+      late: { col: 'var(--r)', dateCol: 'var(--r)', subCol: 'var(--r)', cls: 'late' },
+      next: { col: 'var(--b)', dateCol: 'var(--ink)', subCol: 'var(--ink2)', cls: '' }
+    };
+    const raw = [
+      { date: '02/06', titre: 'Notification du marché', sub: 'Fait', t: 'ok' },
+      { date: '02/08', titre: 'Fin de la période de préparation', sub: '2 mois · fait', t: 'ok' },
+      { date: '03/08', titre: 'OS de démarrage des travaux', sub: 'Fait', t: 'ok' },
+      { date: '15/10', titre: 'Plans d’exécution CVC au visa', sub: 'En retard · +23 j', t: 'late' },
+      { date: '30/11', titre: 'Fin du gros œuvre', sub: 'Planning prévisionnel · dans 23 j', t: 'next' },
+      { date: '03/04', titre: 'Fin du délai · OPR / réception', sub: '2027 · OS n°1 + 8 mois', t: 'next' },
+      { date: '03/05', titre: 'Remise des DOE', sub: '2027 · réception + 1 mois (CCAP)', t: 'next' },
+      { date: '03/04', titre: 'Fin de la garantie de parfait achèvement', sub: '2028 · réception + 1 an', t: 'next' }
+    ];
+    return {
+      mode: this.props.sombre === false ? '' : 'dark',
+      jalons: raw.map((j) => ({ ...j, ...T[j.t] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

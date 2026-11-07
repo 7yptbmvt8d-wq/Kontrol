@@ -1,0 +1,92 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronLeft, X, TriangleAlert } from 'lucide-react';
+import type { Ton } from '../domain/statuts';
+
+export function Header({ sub, title, onBack, backLabel = 'Retour', right }: {
+  sub?: ReactNode; title: ReactNode; onBack?: () => void; backLabel?: string; right?: ReactNode;
+}) {
+  return (
+    <header className="hdr">
+      {onBack && (
+        <button type="button" className="icon-btn tap" aria-label={backLabel} onClick={onBack}>
+          <ChevronLeft size={28} strokeWidth={2.2} aria-hidden />
+        </button>
+      )}
+      <div className="hdr-txt" style={onBack ? undefined : { paddingLeft: 10 }}>
+        {sub && <div className="hdr-sub">{sub}</div>}
+        <h1 className="hdr-title">{title}</h1>
+      </div>
+      {right}
+    </header>
+  );
+}
+
+export function Pastille({ ton, children, dot = true }: { ton: Ton; children: ReactNode; dot?: boolean }) {
+  return <span className={`st t-${ton}${dot ? '' : ' no-dot'}`}>{children}</span>;
+}
+
+export function BadgeBloquant() {
+  return (
+    <span className="st t-r no-dot" style={{ fontWeight: 700 }}>
+      <TriangleAlert size={16} strokeWidth={2.4} aria-hidden />Bloquant
+    </span>
+  );
+}
+
+export function Sheet({ titre, sousTitre, onClose, children, pied, auto }: {
+  titre: string; sousTitre?: ReactNode; onClose: () => void; children: ReactNode; pied?: ReactNode; auto?: boolean;
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', esc);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', esc); };
+  }, [onClose]);
+  return (
+    <>
+      <div className="scrim" onClick={onClose} aria-hidden />
+      <section className={`sheet${auto ? ' auto' : ''}`} role="dialog" aria-modal="true" aria-label={titre}>
+        <div className="sheet-grip" aria-hidden />
+        <div className="sheet-head">
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: 'var(--fs-h2)', fontWeight: 700 }}>{titre}</h2>
+            {sousTitre && <div className="mono ink2">{sousTitre}</div>}
+          </div>
+          <button type="button" className="icon-btn round tap" aria-label="Fermer" onClick={onClose}>
+            <X size={20} strokeWidth={2.4} aria-hidden />
+          </button>
+        </div>
+        <div className="sheet-body">{children}</div>
+        {pied && <div className="sheet-foot">{pied}</div>}
+      </section>
+    </>
+  );
+}
+
+export function Segment<T extends string>({ options, valeur, onChange, label, pill }: {
+  options: { v: T; l: ReactNode; aria?: string }[]; valeur: T | undefined; onChange: (v: T) => void; label: string; pill?: boolean;
+}) {
+  return (
+    <div className={`seg${pill ? ' pill' : ''}`} role="group" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.v} type="button" className="tap" aria-pressed={valeur === o.v} aria-label={o.aria} onClick={() => onChange(o.v)}>
+          {o.l}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+let notifier: ((m: string) => void) | null = null;
+export const toast = (m: string) => notifier?.(m);
+
+export function Toaster() {
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    let t: number | undefined;
+    notifier = (m) => { setMsg(m); window.clearTimeout(t); t = window.setTimeout(() => setMsg(null), 2600); };
+    return () => { notifier = null; };
+  }, []);
+  return msg ? <div className="toast" role="status">{msg}</div> : null;
+}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kontrol B – Nouvelle réserve</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8B7CFF}a:hover{color:#A99EFF}
+.k{--bg:#EEF1F6;--surface:#FFFFFF;--surface2:#F3F5F9;--ink:#0B1220;--ink2:#4A5568;--line:#D5DBE5;--accent:#5B47E0;--on-accent:#FFFFFF;--acc-bg:#E6E2FF;--r:#B91C1C;--r-bg:#FDE8E8;--o:#B45309;--b:#1D4ED8;--g:#15803D;--n:#4B5563;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.k.dark{--bg:#0B1220;--surface:#131C2E;--surface2:#1B263B;--ink:#EEF2F8;--ink2:#A3B0C4;--line:#26334A;--accent:#8B7CFF;--on-accent:#0B1220;--acc-bg:#2A2558;--r:#FF8A8A;--r-bg:#3A1A22;--o:#FDBA74;--b:#8DB4FF;--g:#6EE7A0;--n:#B4BCC8}
+.mono{font-family:'IBM Plex Mono',monospace}
+.row{display:flex;align-items:center;gap:10px;min-height:56px;border-bottom:1px solid var(--line)}
+.rl{flex:0 0 92px;font-size:16px;color:var(--ink2)}
+.pc{flex:1 1 0;height:48px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-family:inherit;font-size:16px;font-weight:600;padding:0 6px}
+.pc.on{background:var(--acc-bg);border-color:var(--accent);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent)}
+</style>
+</helmet>
+<div class="k {{mode}}" style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; padding-top: 54px">
+  <div aria-hidden="true" style="padding: 4px 16px 0 54px">
+    <div class="mono" style="font-size: 16px; color: var(--ink2)">CAMP NORD · B12 · 62 %</div>
+    <div style="font-size: 20px; font-weight: 700">Réhabilitation bâtiment 12</div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(2,6,15,0.65)"></div>
+
+  <section aria-label="Nouvelle réserve" style="position: absolute; left: 0; right: 0; top: 64px; bottom: 0; background: var(--surface); border-radius: 28px 28px 0 0; display: flex; flex-direction: column; padding: 10px 16px 34px 16px; box-sizing: border-box">
+    <div aria-hidden="true" style="width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center"></div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px">
+      <div>
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700">Nouvelle réserve</h2>
+        <div class="mono" style="font-size: 16px; color: var(--ink2)">R-11 · 07/11 16:58</div>
+      </div>
+      <button aria-label="Fermer" style="width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--surface2); color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px">
+      <div role="img" aria-label="Photo 1 prise" style="height: 104px; border-radius: 16px; background: var(--surface2); color: var(--ink2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 16px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></svg>
+        Photo 1
+      </div>
+      <button aria-label="Prendre une autre photo" style="grid-column: span 2; height: 104px; border: 2px dashed var(--accent); border-radius: 16px; background: var(--acc-bg); color: var(--ink); font-family: inherit; font-size: 17px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+        <span style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>
+        </span>
+        Ajouter une photo
+      </button>
+    </div>
+
+    <div style="margin-top: 8px">
+      <div class="row">
+        <span class="rl">Lot</span>
+        <div style="flex: 1 1 auto; display: flex; gap: 6px"><button class="pc">GO</button><button class="pc on" aria-pressed="true">CVC</button><button class="pc">ELE</button></div>
+      </div>
+      <div class="row">
+        <span class="rl">Entreprise</span>
+        <button style="flex: 1 1 auto; height: 48px; border: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 0">CVC Lanterna <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="color: var(--ink2)"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="row">
+        <label class="rl" for="locB">Localisation</label>
+        <input id="locB" value="R+1 · Bureau 104" style="flex: 1 1 auto; min-width: 0; height: 48px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 17px; font-weight: 600">
+      </div>
+    </div>
+
+    <div style="position: relative; margin-top: 12px">
+      <label for="descB" style="position: absolute; left: 14px; top: 8px; font-size: 16px; color: var(--ink2)">Description</label>
+      <textarea id="descB" style="width: 100%; height: 92px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 16px; background: var(--surface2); color: var(--ink); font: inherit; font-size: 17px; padding: 32px 70px 8px 14px; resize: none">Grille de reprise mal fixée, jeu visible en plafond</textarea>
+      <button aria-label="Dicter la description" style="position: absolute; right: 10px; top: 22px; width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; padding: 0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+    </div>
+
+    <div style="margin-top: 12px">
+      <div style="font-size: 16px; color: var(--ink2); margin-bottom: 6px">Gravité</div>
+      <div style="display: flex; gap: 6px"><button class="pc">Mineure</button><button class="pc on" aria-pressed="true">Majeure</button><button class="pc" style="color: var(--r)">Bloquante</button></div>
+    </div>
+
+    <div style="margin-top: 12px">
+      <div style="display: flex; justify-content: space-between; font-size: 16px; color: var(--ink2); margin-bottom: 6px"><span>Échéance</span><span class="mono" style="color: var(--ink)">22/11/2026</span></div>
+      <div style="display: flex; gap: 6px"><button class="pc">+8 j</button><button class="pc on" aria-pressed="true">+15 j</button><button class="pc">+30 j</button><button class="pc" aria-label="Choisir une date" style="flex: 0 0 56px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button></div>
+    </div>
+
+    <button style="margin-top: auto; height: 56px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent); font-family: inherit; font-size: 18px; font-weight: 600">Enregistrer la réserve</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sombre":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { mode: this.props.sombre === false ? '' : 'dark' };
+  }
+}
+</script>
+</body>
+</html>

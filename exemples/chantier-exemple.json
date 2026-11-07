@@ -1,0 +1,150 @@
+{
+  "chantier": {
+    "nom": "Réhabilitation bâtiment 12 – Camp Nord",
+    "operation": "Réhabilitation thermique et mise aux normes du bâtiment d'hébergement 12",
+    "site": "CAMP NORD · B12",
+    "numero_marche": "2026-SID-SE-0412",
+    "lots": [
+      { "code": "GO", "intitule": "Gros œuvre – maçonnerie – étanchéité", "titulaire": "Moretti GO", "sous_traitants": ["Étanchéité Corse Sud"] },
+      { "code": "CVC", "intitule": "Chauffage – ventilation – plomberie", "titulaire": "CVC Lanterna", "sous_traitants": ["Calorifuge Méditerranée"] }
+    ]
+  },
+  "points_controle": [
+    {
+      "id": "GO-1.3-01", "lot": "GO", "article_cctp": "GO 1.3", "phase": "preparation", "type": "document",
+      "intitule": "Remise du plan d'installation de chantier",
+      "critere_acceptation": "Plan indiquant accès, zones de stockage, base vie, clôtures et réseaux provisoires",
+      "reference": "CCAG Travaux art. 28.2", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+15" }, "bloquant": false
+    },
+    {
+      "id": "GO-1.4-01", "lot": "GO", "article_cctp": "GO 1.4", "phase": "preparation", "type": "agrement",
+      "intitule": "Agrément de la formulation béton",
+      "critere_acceptation": "Fiche de formulation BPE C25/30 XC1, attestation NF du fournisseur",
+      "reference": "NF EN 206/CN", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+30" }, "bloquant": true
+    },
+    {
+      "id": "GO-2.1-01", "lot": "GO", "article_cctp": "GO 2.1", "phase": "execution", "type": "point_arret",
+      "intitule": "Réception des fonds de fouille des massifs",
+      "critere_acceptation": "Sol conforme à l'étude G2 PRO, fond propre, horizontal, hors d'eau",
+      "reference": "NF DTU 13.1", "responsable": "moe",
+      "echeance": { "type": "evenement", "valeur": "avant coulage du béton de propreté" }, "bloquant": true
+    },
+    {
+      "id": "GO-2.2-01", "lot": "GO", "article_cctp": "GO 2.2", "phase": "execution", "type": "point_arret",
+      "intitule": "Contrôle des armatures avant coulage du plancher haut R+1",
+      "critere_acceptation": "Sections, enrobages (≥ 25 mm) et recouvrements conformes aux plans visés",
+      "reference": "NF DTU 21", "responsable": "moe",
+      "echeance": { "type": "evenement", "valeur": "avant coulage" }, "bloquant": true
+    },
+    {
+      "id": "GO-3.2-01", "lot": "GO", "article_cctp": "GO 3.2", "phase": "execution", "type": "controle",
+      "intitule": "Reprise des fissures de façade par injection",
+      "critere_acceptation": "Fissures > 0,2 mm injectées, aucun suintement, surface ragréée",
+      "reference": "NF EN 1504-5", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+90" }, "bloquant": false
+    },
+    {
+      "id": "GO-3.4-01", "lot": "GO", "article_cctp": "GO 3.4.2", "phase": "execution", "type": "controle",
+      "intitule": "Relevés d'étanchéité d'acrotère ≥ 15 cm",
+      "critere_acceptation": "Relevé ≥ 15 cm au-dessus de la protection, tête protégée par bande solin",
+      "reference": "NF DTU 43.1", "responsable": "moe",
+      "echeance": { "type": "evenement", "valeur": "avant pose couvertine" }, "bloquant": true
+    },
+    {
+      "id": "GO-3.5-01", "lot": "GO", "article_cctp": "GO 3.5", "phase": "execution", "type": "essai",
+      "intitule": "Essai d'étanchéité à l'eau de la toiture terrasse",
+      "critere_acceptation": "Mise en eau 48 h, aucune infiltration constatée en sous-face",
+      "reference": "NF DTU 43.1", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+120" }, "bloquant": false
+    },
+    {
+      "id": "GO-4.1-01", "lot": "GO", "article_cctp": "GO 4.1", "phase": "reception", "type": "document",
+      "intitule": "Remise des PV d'essais béton (écrasement à 28 jours)",
+      "critere_acceptation": "Résistance caractéristique ≥ 25 MPa sur l'ensemble des prélèvements",
+      "reference": "NF EN 12390-3", "responsable": "entreprise",
+      "echeance": { "type": "evenement", "valeur": "avant OPR" }, "bloquant": false
+    },
+    {
+      "id": "CVC-1.2-01", "lot": "CVC", "article_cctp": "CVC 1.2", "phase": "preparation", "type": "document",
+      "intitule": "Visa des plans d'exécution CVC et note de dimensionnement",
+      "critere_acceptation": "Plans au visa du MOE et avis du contrôleur technique sans réserve",
+      "reference": "CCAG Travaux art. 29", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+45" }, "bloquant": true
+    },
+    {
+      "id": "CVC-1.3-01", "lot": "CVC", "article_cctp": "CVC 1.3", "phase": "preparation", "type": "agrement",
+      "intitule": "Agrément de la PAC air/eau et des émetteurs",
+      "critere_acceptation": "Fiches techniques conformes au CCTP (SCOP ≥ 3,8), certification Eurovent",
+      "reference": "NF EN 14511", "responsable": "entreprise",
+      "echeance": { "type": "relative", "valeur": "J+30" }, "bloquant": false
+    },
+    {
+      "id": "CVC-2.1-01", "lot": "CVC", "article_cctp": "CVC 2.1", "phase": "execution", "type": "essai",
+      "intitule": "Essai d'étanchéité du réseau de chauffage",
+      "critere_acceptation": "Épreuve à 1,5 fois la pression de service, maintien 2 h sans chute de pression",
+      "reference": "NF DTU 65.10", "responsable": "entreprise",
+      "echeance": { "type": "evenement", "valeur": "avant calorifugeage et fermeture des gaines" }, "bloquant": true
+    },
+    {
+      "id": "CVC-2.3-01", "lot": "CVC", "article_cctp": "CVC 2.3", "phase": "execution", "type": "controle",
+      "intitule": "Calorifugeage des réseaux ECS en local technique",
+      "critere_acceptation": "Isolant classe 3 minimum, continuité aux traversées et organes de robinetterie",
+      "reference": "NF DTU 45.2", "responsable": "moe",
+      "echeance": { "type": "relative", "valeur": "J+150" }, "bloquant": false
+    },
+    {
+      "id": "CVC-2.4-01", "lot": "CVC", "article_cctp": "CVC 2.4", "phase": "execution", "type": "prescription",
+      "intitule": "Traversées coupe-feu des gaines de ventilation",
+      "critere_acceptation": "Clapets CF et calfeutrements conformes au PV de résistance au feu",
+      "reference": "Arrêté du 22 mars 2004", "responsable": "controleur_technique",
+      "echeance": { "type": "evenement", "valeur": "avant fermeture des plafonds" }, "bloquant": true
+    },
+    {
+      "id": "CVC-3.1-01", "lot": "CVC", "article_cctp": "CVC 3.1", "phase": "reception", "type": "essai",
+      "intitule": "Mesure des débits de ventilation par local",
+      "critere_acceptation": "Débits mesurés à ± 15 % des débits de calcul, rapport d'autocontrôle remis",
+      "reference": "NF EN 12599", "responsable": "entreprise",
+      "echeance": { "type": "evenement", "valeur": "avant OPR" }, "bloquant": false
+    },
+    {
+      "id": "CVC-4.1-01", "lot": "CVC", "article_cctp": "CVC 4.1", "phase": "cloture", "type": "document",
+      "intitule": "Remise du DOE CVC et des notices de maintenance",
+      "critere_acceptation": "Plans de récolement, fiches techniques, PV d'essais, notices et contrats d'entretien",
+      "reference": "CCAG Travaux art. 40", "responsable": "entreprise",
+      "echeance": { "type": "date", "valeur": "30/06/2027" }, "bloquant": false
+    }
+  ],
+  "jalons": [
+    {
+      "id": "J-PREP", "categorie": "delai", "intitule": "Fin de la période de préparation",
+      "article_ccap": "CCAP 4.1.2", "echeance": { "reference": "OS_demarrage", "jours": 30 }
+    },
+    {
+      "id": "J-PEXE", "categorie": "documentaire", "intitule": "Remise des plans d'exécution au visa",
+      "article_ccap": "CCAP 8.2", "echeance": { "reference": "OS_demarrage", "jours": 45 }
+    },
+    {
+      "id": "J-DELAI", "categorie": "delai", "intitule": "Fin du délai d'exécution · OPR / réception",
+      "article_ccap": "CCAP 4.1.1", "echeance": { "reference": "OS_demarrage", "jours": 243 }
+    },
+    {
+      "id": "J-DOE", "categorie": "documentaire", "intitule": "Remise des DOE",
+      "article_ccap": "CCAP 8.4", "echeance": { "reference": "reception", "jours": 30 }
+    },
+    {
+      "id": "J-PDF", "categorie": "paiement", "intitule": "Remise du projet de décompte final",
+      "article_ccap": "CCAP 3.3.4", "echeance": { "reference": "reception", "jours": 30 }
+    },
+    {
+      "id": "J-GPA", "categorie": "garantie", "intitule": "Fin de la garantie de parfait achèvement",
+      "article_ccap": "CCAP 9.1", "echeance": { "reference": "reception", "jours": 365 }
+    }
+  ],
+  "penalites": [
+    { "motif": "Retard dans l'exécution des travaux", "montant_ou_taux": "1/1000 du montant HT du marché par jour calendaire", "article_ccap": "CCAP 4.3.1" },
+    { "motif": "Absence ou retard à une réunion de chantier", "montant_ou_taux": "150 € HT par absence", "article_ccap": "CCAP 4.3.3" },
+    { "motif": "Retard de remise des DOE", "montant_ou_taux": "100 € HT par jour calendaire", "article_ccap": "CCAP 4.3.4" }
+  ]
+}

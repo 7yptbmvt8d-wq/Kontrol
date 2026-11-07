@@ -1,0 +1,102 @@
+/* Kontrol — design tokens (direction B « Poste de commande »)
+   Copie de design/tokens.css (sans @import Google Fonts : polices embarquées via @fontsource).
+   Mode sombre par défaut ; mode clair via [data-theme="light"]
+   ou automatiquement selon le système. */
+
+
+:root {
+  /* Surfaces & texte — sombre */
+  --bg: #0B1220;
+  --surface: #131C2E;
+  --surface2: #1B263B;
+  --ink: #EEF2F8;
+  --ink2: #A3B0C4;
+  --line: #26334A;
+  --scrim: rgba(2, 6, 15, 0.65);
+
+  /* Accent (identité) */
+  --accent: #8B7CFF;
+  --on-accent: #0B1220;
+  --acc-bg: #2A2558;
+
+  /* Statuts : couleur de texte / fond teinté */
+  --r: #FF8A8A;  --r-bg: #3A1A22;   /* rouge  : en retard, bloquant, non conforme */
+  --o: #FDBA74;  --o-bg: #3A2716;   /* orange : relancé, en cours, à revoir */
+  --b: #8DB4FF;  --b-bg: #172A4D;   /* bleu   : ouvert, à contrôler, à venir */
+  --g: #6EE7A0;  --g-bg: #12331F;   /* vert   : levé, conforme, fait */
+  --on-g: #0B1220;
+  --n: #B4BCC8;  --n-bg: #232C3A;   /* gris   : sans objet */
+
+  /* Typographie */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --fs-body: 16px;      /* minimum absolu */
+  --fs-item: 17px;      /* titres de ligne, champs */
+  --fs-btn: 18px;
+  --fs-h3: 20px;
+  --fs-h2: 22px;
+  --fs-h1: 30px;
+  --fs-kpi: 30px;       /* chiffres compteurs, en mono */
+
+  /* Rayons */
+  --rad-sm: 12px;       /* vignettes, boutons de format */
+  --rad-md: 16px;       /* boutons principaux, cartes de liste */
+  --rad-lg: 18px;       /* cartes de section */
+  --rad-sheet: 28px;    /* panneau qui monte du bas */
+  --rad-pill: 999px;
+
+  /* Tactile & espacements */
+  --touch: 48px;        /* zone tactile minimum */
+  --btn-h: 56px;        /* bouton principal */
+  --fab: 64px;
+  --gutter: 16px;
+  --gap-xs: 6px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 20px;
+}
+
+:root[data-theme="light"] {
+  --bg: #EEF1F6;
+  --surface: #FFFFFF;
+  --surface2: #F3F5F9;
+  --ink: #0B1220;
+  --ink2: #4A5568;
+  --line: #D5DBE5;
+  --accent: #5B47E0;
+  --on-accent: #FFFFFF;
+  --acc-bg: #E6E2FF;
+  --r: #B91C1C;  --r-bg: #FDE8E8;
+  --o: #B45309;  --o-bg: #FDF0E1;
+  --b: #1D4ED8;  --b-bg: #E3ECFD;
+  --g: #15803D;  --g-bg: #E1F5E8;
+  --on-g: #FFFFFF;
+  --n: #4B5563;  --n-bg: #ECEEF1;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #EEF1F6; --surface: #FFFFFF; --surface2: #F3F5F9;
+    --ink: #0B1220; --ink2: #4A5568; --line: #D5DBE5;
+    --accent: #5B47E0; --on-accent: #FFFFFF; --acc-bg: #E6E2FF;
+    --r: #B91C1C; --r-bg: #FDE8E8; --o: #B45309; --o-bg: #FDF0E1;
+    --b: #1D4ED8; --b-bg: #E3ECFD; --g: #15803D; --g-bg: #E1F5E8;
+    --on-g: #FFFFFF; --n: #4B5563; --n-bg: #ECEEF1;
+  }
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe areas iPhone (PWA en plein écran : viewport-fit=cover) */
+.app {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mono { font-family: var(--font-mono); }
