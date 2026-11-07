@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { db, supprimerChantier } from '../db/schema';
-import type { Chantier, Lot, PhaseChantier } from '../domain/types';
-import { PHASE_CHANTIER } from '../domain/statuts';
+import { useLive } from '../db/live';
+import type { Chantier, Lot, PhaseChantier, TypeControle } from '../domain/types';
+import { PHASE_CHANTIER, TYPE_CONTROLE } from '../domain/statuts';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 import { remplacer } from '../router';
 
@@ -109,6 +110,8 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
           </section>
         ))}
 
+        <BloquantsParType chantierId={chantier.id!} />
+
         <div className="ink2">
           La réception réelle remplace la date prévisionnelle (OS + délai) dans le calcul des jalons rapportés à la réception.
         </div>
@@ -117,5 +120,47 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
         </button>
       </div>
     </Sheet>
+  );
+}
+
+/** Réglage en masse du caractère bloquant, type par type (ex. retirer les 30 documents marqués bloquants). */
+function BloquantsParType({ chantierId }: { chantierId: number }) {
+  const points = useLive(`bloquants-types:${chantierId}`, () => db.points.where('chantierId').equals(chantierId).toArray(), [chantierId]);
+  if (!points?.length) return null;
+  const appliquer = async (t: TypeControle, bloquant: boolean, n: number) => {
+    const msg = bloquant
+      ? `Rendre bloquants les ${n} points de type « ${TYPE_CONTROLE[t]} » ?`
+      : `Retirer le caractère bloquant des ${n} points de type « ${TYPE_CONTROLE[t]} » ?`;
+    if (!confirm(msg)) return;
+    await db.points.where('chantierId').equals(chantierId).filter((p) => p.type === t && p.bloquant !== bloquant).modify({ bloquant });
+    toast(`${n} point${n > 1 ? 's' : ''} modifié${n > 1 ? 's' : ''}`);
+  };
+  const total = points.filter((p) => p.bloquant).length;
+  return (
+    <section aria-label="Points bloquants par type">
+      <h3 className="sec-title">Points bloquants par type</h3>
+      <div className="ink2" style={{ marginTop: 2 }}>
+        <span className="mono">{total}</span> bloquant{total > 1 ? 's' : ''} sur <span className="mono">{points.length}</span> points. Réglage fin : bouton crayon d’un point.
+      </div>
+      <div className="card flush" style={{ marginTop: 8 }}>
+        {(Object.keys(TYPE_CONTROLE) as TypeControle[]).map((t, i) => {
+          const duType = points.filter((p) => p.type === t);
+          if (!duType.length) return null;
+          const n = duType.filter((p) => p.bloquant).length;
+          return (
+            <div key={t} className="row" style={{ padding: '6px 6px 6px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
+              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                <div style={{ fontWeight: 600 }}>{TYPE_CONTROLE[t]}</div>
+                <div className="ink2"><span className="mono" style={n ? { color: 'var(--r)', fontWeight: 600 } : undefined}>{n}</span> / <span className="mono">{duType.length}</span> bloquants</div>
+              </div>
+              <button type="button" className="btn sec tap" style={{ height: 48, padding: '0 12px', fontSize: 16 }} disabled={n === 0}
+                onClick={() => appliquer(t, false, n)}>Aucun</button>
+              <button type="button" className="btn sec tap" style={{ height: 48, padding: '0 12px', fontSize: 16 }} disabled={n === duType.length}
+                onClick={() => appliquer(t, true, duType.length - n)}>Tous</button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

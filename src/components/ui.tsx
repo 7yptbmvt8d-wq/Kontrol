@@ -3,7 +3,7 @@ import { ChevronLeft, X, TriangleAlert } from 'lucide-react';
 import type { Ton } from '../domain/statuts';
 
 export function Header({ sub, title, onBack, backLabel = 'Retour', right }: {
-  sub?: ReactNode; title: ReactNode; onBack?: () => void; backLabel?: string; right?: ReactNode;
+  sub?: ReactNode; title?: ReactNode; onBack?: () => void; backLabel?: string; right?: ReactNode;
 }) {
   return (
     <header className="hdr">
@@ -14,7 +14,7 @@ export function Header({ sub, title, onBack, backLabel = 'Retour', right }: {
       )}
       <div className="hdr-txt" style={onBack ? undefined : { paddingLeft: 10 }}>
         {sub && <div className="hdr-sub">{sub}</div>}
-        <h1 className="hdr-title">{title}</h1>
+        {title && <h1 className="hdr-title">{title}</h1>}
       </div>
       {right}
     </header>
@@ -67,7 +67,7 @@ export function Sheet({ titre, sousTitre, onClose, children, pied, auto }: {
         <div className="sheet-head">
           <div style={{ minWidth: 0 }}>
             <h2 className="sheet-title">{titre}</h2>
-            {sousTitre && <div className="mono ink2">{sousTitre}</div>}
+            {sousTitre && <div className="mono ink2 ellipsis">{sousTitre}</div>}
           </div>
           <button type="button" className="icon-btn round tap" aria-label="Fermer" onClick={() => fermer.current()}>
             <X size={20} strokeWidth={2.4} aria-hidden />

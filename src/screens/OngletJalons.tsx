@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
-import type { Chantier, Jalon } from '../domain/types';
+import type { CategorieJalon, Chantier, Jalon, Penalite, RefJalon } from '../domain/types';
 import { aujourdHui, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
-import { CodeLot, Pastille, Sheet, toast } from '../components/ui';
+import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 
 const TON: Record<StatutJalon, { dot: string; date: string; libelle: string }> = {
   fait: { dot: 'var(--g)', date: 'var(--ink2)', libelle: 'Fait' },
@@ -31,7 +31,8 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
   }, [id]);
   const [filtre, setFiltreEtat] = useState(filtres.get(id) ?? TOUS);
   const setFiltre = (f: string) => { filtres.set(id, f); setFiltreEtat(f); };
-  const [edition, setEdition] = useState<{ j: Jalon; date?: string; ctx: Contexte } | null>(null);
+  const [edition, setEdition] = useState<{ j?: Jalon } | null>(null);
+  const [penalite, setPenalite] = useState<{ p?: Penalite } | null>(null);
 
   if (!data) return null;
   const { jalons, lots, penalites } = data;
@@ -92,7 +93,7 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
                     <span className="tl-dot" style={{ background: t.dot }} />
                     <span className="tl-line" />
                   </div>
-                  <button type="button" className={`tl-box btnlike tap${st === 'en_retard' ? ' alert' : ''}`} onClick={() => setEdition({ j, date, ctx })}>
+                  <button type="button" className={`tl-box btnlike tap${st === 'en_retard' ? ' alert' : ''}`} onClick={() => setEdition({ j })}>
                     <div style={{ fontWeight: 600, lineHeight: 1.3 }}>{j.lotCode && <><CodeLot code={j.lotCode} />{' '}</>}{j.intitule}</div>
                     <div style={{ color: st === 'en_retard' ? 'var(--r)' : 'var(--ink2)' }}>
                       <span className="sr-only">{t.libelle}. </span>{sous}
@@ -105,23 +106,33 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
           </ol>
         )}
 
+        <button type="button" className="btn sec block tap" style={{ marginTop: 8 }} onClick={() => setEdition({})}>
+          <Plus size={22} strokeWidth={2.4} aria-hidden />Ajouter un jalon
+        </button>
+
+        <h2 className="sec-title" style={{ margin: '20px 0 8px' }}>Pénalités</h2>
         {pens.length > 0 && (
-          <>
-            <h2 className="sec-title" style={{ margin: '16px 0 8px' }}>Pénalités</h2>
-            <section className="card flush">
-              {pens.map((p, i) => (
-                <div key={p.id} style={{ padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
-                  <div style={{ fontWeight: 600 }}>{p.lotCode && <><CodeLot code={p.lotCode} />{' '}</>}{p.motif}</div>
-                  <div>{p.montantOuTaux}</div>
-                  {p.articleCcap && <div className="mono ink2">{p.articleCcap}</div>}
-                </div>
-              ))}
-            </section>
-          </>
+          <section className="card flush">
+            {pens.map((p, i) => (
+              <button key={p.id} type="button" className="tap" onClick={() => setPenalite({ p })}
+                style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'transparent', padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
+                <div style={{ fontWeight: 600 }}>{p.lotCode && <><CodeLot code={p.lotCode} />{' '}</>}{p.motif}</div>
+                <div>{p.montantOuTaux}</div>
+                {p.articleCcap && <div className="mono ink2">{p.articleCcap}</div>}
+              </button>
+            ))}
+          </section>
         )}
+        <button type="button" className="btn sec block tap" style={{ marginTop: 8 }} onClick={() => setPenalite({})}>
+          <Plus size={22} strokeWidth={2.4} aria-hidden />Ajouter une pénalité
+        </button>
       </div>
 
-      {edition && <EditionJalon {...edition} onClose={() => setEdition(null)} />}
+      {edition && (
+        <EditionJalon j={edition.j} chantierId={id} lots={lots.map((l) => l.code)} onClose={() => setEdition(null)}
+          calculer={(x) => { const ctx = ctxDe(x); return { ctx, date: dateJalon(x, ctx) }; }} />
+      )}
+      {penalite && <EditionPenalite p={penalite.p} chantierId={id} lots={lots.map((l) => l.code)} onClose={() => setPenalite(null)} />}
     </div>
   );
 }
@@ -176,37 +187,167 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
   );
 }
 
-function EditionJalon({ j, date, ctx, onClose }: { j: Jalon; date?: string; ctx: Contexte; onClose: () => void }) {
-  const [realise, setRealise] = useState(j.dateRealisee ?? '');
-  const [fixe, setFixe] = useState(j.dateFixe ?? '');
+const CATEGORIES: Record<CategorieJalon, string> = {
+  delai: 'Délai', documentaire: 'Documentaire', reception: 'Réception', garantie: 'Garantie', paiement: 'Paiement',
+};
+
+/** Modification ou création d'un jalon (j absent = création). Aperçu de la date calculée en direct. */
+function EditionJalon({ j, chantierId, lots, calculer, onClose }: {
+  j?: Jalon; chantierId: number; lots: string[]; calculer: (j: Jalon) => { date?: string; ctx: Contexte }; onClose: () => void;
+}) {
+  const [v, setV] = useState<Jalon>(j ?? {
+    id: '', chantierId, categorie: 'documentaire', intitule: '', articleCcap: '', reference: 'OS_demarrage', jours: 0, ordre: 0,
+  });
+  const [jours, setJours] = useState(String(j?.jours ?? 0));
+  const set = <K extends keyof Jalon>(k: K, val: Jalon[K]) => setV((o) => ({ ...o, [k]: val }));
+  const nJours = /^-?\d+$/.test(jours.trim()) ? Number(jours) : NaN;
+  const brouillon: Jalon = { ...v, jours: Number.isNaN(nJours) ? 0 : nJours, dateFixe: v.dateFixe || undefined };
+  const { date, ctx } = calculer(brouillon);
+  const base = v.reference === 'OS_demarrage' ? `OS (${fmtDate(ctx.dateOS)})` : `Réception (${fmtDate(ctx.reception)})`;
+
   const enregistrer = async () => {
-    await db.jalons.update(j.uid!, { dateRealisee: realise || undefined, dateFixe: fixe || undefined });
-    toast('Jalon mis à jour');
+    if (!v.intitule.trim()) { toast('Intitulé obligatoire'); return; }
+    if (v.reference !== 'autre' && Number.isNaN(nJours)) { toast('Nombre de jours attendu (ex. 30 ou -15)'); return; }
+    const propre: Jalon = { ...brouillon, intitule: v.intitule.trim(), articleCcap: v.articleCcap.trim(), lotCode: v.lotCode || undefined, dateRealisee: v.dateRealisee || undefined };
+    if (j) await db.jalons.put(propre);
+    else {
+      await db.transaction('rw', db.jalons, async () => {
+        const existants = await db.jalons.where('chantierId').equals(chantierId).toArray();
+        const ids = new Set(existants.map((x) => x.id));
+        let n = existants.length + 1;
+        while (ids.has(`J-AJ-${n}`)) n++;
+        await db.jalons.add({ ...propre, id: `J-AJ-${n}`, ordre: Math.max(0, ...existants.map((x) => x.ordre)) + 1 });
+      });
+    }
+    toast(j ? 'Jalon mis à jour' : 'Jalon ajouté');
     onClose();
   };
-  const base = j.reference === 'OS_demarrage' ? `OS (${fmtDate(ctx.dateOS)})` : `Réception (${fmtDate(ctx.reception)})`;
+  const supprimer = async () => {
+    if (!j || !confirm(`Supprimer le jalon « ${j.intitule} » ?`)) return;
+    await db.jalons.delete(j.uid!);
+    toast('Jalon supprimé');
+    onClose();
+  };
+
   return (
-    <Sheet titre={j.intitule} sousTitre={[j.lotCode ? `Lot ${j.lotCode}` : 'Commun', j.articleCcap].filter(Boolean).join(' · ')} onClose={onClose} auto
-      pied={<button type="button" className="btn block tap" onClick={enregistrer}>Enregistrer</button>}>
-      <div className="stack">
+    <Sheet titre={j ? 'Jalon' : 'Nouveau jalon'} sousTitre={j?.id} onClose={onClose}
+      pied={
+        <div className="row">
+          {j && <button type="button" className="btn danger tap" aria-label="Supprimer le jalon" onClick={supprimer}><Trash2 size={22} aria-hidden /></button>}
+          <button type="button" className="btn block tap" onClick={enregistrer}>{j ? 'Enregistrer' : 'Ajouter le jalon'}</button>
+        </div>
+      }>
+      <div className="stack" style={{ gap: 14 }}>
         <dl className="card flush">
-          <div className="kv"><dt>Échéance</dt><dd className="mono">{fmtDate(j.reference === 'autre' ? fixe || undefined : date)}</dd></div>
-          <div className="kv"><dt>Calcul</dt><dd>{j.reference === 'autre' ? `Date saisie manuellement${j.jours ? ` · délai indiqué : ${j.jours} j` : ''}` : `${base} ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j`}</dd></div>
-          <div className="kv"><dt>État</dt><dd>{realise ? <Pastille ton="g">Fait</Pastille> : '—'}</dd></div>
+          <div className="kv"><dt>Échéance</dt><dd className="mono" style={{ fontWeight: 600 }}>{fmtDate(date)}</dd></div>
+          <div className="kv"><dt>Calcul</dt><dd>{v.reference === 'autre' ? 'Date saisie' : `${base} ${brouillon.jours < 0 ? '−' : '+'} ${Math.abs(brouillon.jours)} j`}</dd></div>
         </dl>
-        {j.reference === 'autre' && (
-          <div className="field">
-            <label htmlFor="jfixe">Date d’échéance</label>
-            <input id="jfixe" type="date" className="input mono" value={fixe} onChange={(e) => setFixe(e.target.value)} />
-          </div>
-        )}
+
         <div className="field">
-          <label htmlFor="jreal">Date de réalisation (vide = non fait)</label>
+          <label htmlFor="jreal">Réalisé le (vide = non fait)</label>
           <div className="row">
-            <input id="jreal" type="date" className="input mono" style={{ flex: '1 1 auto', minWidth: 0 }} value={realise} onChange={(e) => setRealise(e.target.value)} />
-            {realise
-              ? <button type="button" className="btn sec tap" onClick={() => setRealise('')}>Effacer</button>
-              : <button type="button" className="btn sec tap" onClick={() => setRealise(aujourdHui())}>Aujourd’hui</button>}
+            <input id="jreal" type="date" className="input mono" style={{ flex: '1 1 auto', minWidth: 0 }} value={v.dateRealisee ?? ''} onChange={(e) => set('dateRealisee', e.target.value)} />
+            {v.dateRealisee
+              ? <button type="button" className="btn sec tap" onClick={() => set('dateRealisee', '')}>Effacer</button>
+              : <button type="button" className="btn sec tap" onClick={() => set('dateRealisee', aujourdHui())}>Aujourd’hui</button>}
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="j-int">Intitulé</label>
+          <textarea id="j-int" className="textarea" style={{ minHeight: 64 }} value={v.intitule} onChange={(e) => set('intitule', e.target.value)} />
+        </div>
+
+        <div>
+          <div className="lbl" style={{ marginBottom: 6 }}>Calculé à partir de</div>
+          <Segment<RefJalon> label="Référence du jalon" valeur={v.reference} onChange={(r) => set('reference', r)}
+            options={[{ v: 'OS_demarrage', l: 'OS' }, { v: 'reception', l: 'Réception' }, { v: 'autre', l: 'Date libre' }]} />
+          <div style={{ marginTop: 8 }}>
+            {v.reference === 'autre' ? (
+              <input type="date" className="input mono" aria-label="Date d’échéance" value={v.dateFixe ?? ''} onChange={(e) => set('dateFixe', e.target.value)} />
+            ) : (
+              <div className="row">
+                <input className="input mono" inputMode="numeric" aria-label="Nombre de jours" value={jours}
+                  onChange={(e) => setJours(e.target.value.replace(/[^\d-]/g, ''))} onFocus={(e) => e.target.select()} style={{ flex: '1 1 auto', minWidth: 0 }} />
+                <span className="ink2" style={{ flex: '0 0 auto' }}>jours (− = avant)</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="frow">
+            <label className="rl" htmlFor="j-cat">Catégorie</label>
+            <select id="j-cat" value={v.categorie} onChange={(e) => set('categorie', e.target.value as CategorieJalon)}>
+              {(Object.keys(CATEGORIES) as CategorieJalon[]).map((c) => <option key={c} value={c}>{CATEGORIES[c]}</option>)}
+            </select>
+          </div>
+          {lots.length > 1 && (
+            <div className="frow">
+              <label className="rl" htmlFor="j-lot">Marché</label>
+              <select id="j-lot" value={v.lotCode ?? ''} onChange={(e) => set('lotCode', e.target.value || undefined)}>
+                <option value="">Commun à tous</option>
+                {lots.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="frow" style={{ borderBottom: 0 }}>
+            <label className="rl" htmlFor="j-art">Article CCAP</label>
+            <input id="j-art" className="mono" value={v.articleCcap} onChange={(e) => set('articleCcap', e.target.value)} />
+          </div>
+        </div>
+        {v.categorie === 'delai' && (
+          <div className="ink2">Un jalon « Délai » rapporté à l’OS fixe la fin du délai d’exécution et la réception prévisionnelle.</div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+function EditionPenalite({ p, chantierId, lots, onClose }: { p?: Penalite; chantierId: number; lots: string[]; onClose: () => void }) {
+  const [v, setV] = useState<Penalite>(p ?? { chantierId, motif: '', montantOuTaux: '', articleCcap: '' });
+  const set = <K extends keyof Penalite>(k: K, val: Penalite[K]) => setV((o) => ({ ...o, [k]: val }));
+  const enregistrer = async () => {
+    if (!v.motif.trim()) { toast('Motif obligatoire'); return; }
+    await db.penalites.put({ ...v, motif: v.motif.trim(), montantOuTaux: v.montantOuTaux.trim(), articleCcap: v.articleCcap.trim(), lotCode: v.lotCode || undefined });
+    toast(p ? 'Pénalité modifiée' : 'Pénalité ajoutée');
+    onClose();
+  };
+  const supprimer = async () => {
+    if (!p || !confirm('Supprimer cette pénalité ?')) return;
+    await db.penalites.delete(p.id!);
+    onClose();
+  };
+  return (
+    <Sheet titre={p ? 'Pénalité' : 'Nouvelle pénalité'} onClose={onClose} auto
+      pied={
+        <div className="row">
+          {p && <button type="button" className="btn danger tap" aria-label="Supprimer la pénalité" onClick={supprimer}><Trash2 size={22} aria-hidden /></button>}
+          <button type="button" className="btn block tap" onClick={enregistrer}>Enregistrer</button>
+        </div>
+      }>
+      <div className="stack" style={{ gap: 14 }}>
+        <div className="field">
+          <label htmlFor="pe-motif">Motif</label>
+          <textarea id="pe-motif" className="textarea" style={{ minHeight: 64 }} value={v.motif} onChange={(e) => set('motif', e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="pe-mt">Montant ou taux</label>
+          <input id="pe-mt" className="input" value={v.montantOuTaux} onChange={(e) => set('montantOuTaux', e.target.value)} />
+        </div>
+        <div>
+          {lots.length > 1 && (
+            <div className="frow">
+              <label className="rl" htmlFor="pe-lot">Marché</label>
+              <select id="pe-lot" value={v.lotCode ?? ''} onChange={(e) => set('lotCode', e.target.value || undefined)}>
+                <option value="">Commun à tous</option>
+                {lots.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="frow" style={{ borderBottom: 0 }}>
+            <label className="rl" htmlFor="pe-art">Article CCAP</label>
+            <input id="pe-art" className="mono" value={v.articleCcap} onChange={(e) => set('articleCcap', e.target.value)} />
           </div>
         </div>
       </div>

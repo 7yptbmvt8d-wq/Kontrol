@@ -25,6 +25,12 @@ SheetJS (Excel), jsPDF (PDF), JSZip (sauvegarde). Pas de backend.
   `aria-current="page"` onglet actif, `aria-pressed` segments et filtres.
 - Dates JJ/MM/AAAA (JJ/MM en liste), heure 24 h, retard « +N j » en rouge.
 
+## Principe d'usage
+**Après l'import JSON, tout se fait sur le téléphone** : aucun retour nécessaire vers Claude ou un ordinateur.
+Toute donnée importée doit être modifiable dans l'app (points, jalons, pénalités, lots/marchés, intervenants),
+et on doit pouvoir en ajouter ou en supprimer. Prévoir des actions groupées quand une correction répétitive est probable
+(ex. « points bloquants par type » dans les paramètres du chantier).
+
 ## Règle d'arbitrage
 En cas d'écart entre le cahier des charges et les maquettes, **le cahier des charges prime** (choix de l'utilisateur).
 Les maquettes donnent la forme ; le cahier des charges donne les fonctions et les libellés métier.
@@ -80,7 +86,10 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
-- `tests/` — tests Vitest de la logique métier (dates, import, migration).
+- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist).
+- `src/services/photos.ts` — compression (1600 px, JPEG 0,7) + vignette 240 px ; `src/components/Photos.tsx` — bandeau, visionneuse.
+- Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
+  `OngletChecklist`, `DetailPoint` (état en un toucher, commentaire auto-enregistré, photos), `EditionPoint`.
 
 ## Fluidité (conventions)
 - Lectures réactives via `useLive(cle, requete, deps)` (`src/db/live.ts`) : affiche immédiatement le dernier
@@ -94,7 +103,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1
-(a) chantiers + import JSON ✅ · (b) checklist · (c) réserves + photos · (d) exports · (e) sauvegarde Drive · (f) PWA hors ligne.
+(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos · (d) exports · (e) sauvegarde Drive · (f) PWA hors ligne.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

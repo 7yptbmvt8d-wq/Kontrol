@@ -5,6 +5,7 @@ import { useLive } from '../db/live';
 import { Header } from '../components/ui';
 import { lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
+import { OngletChecklist } from './OngletChecklist';
 import { OngletIntervenants } from './OngletIntervenants';
 import { ParametresChantier } from './ParametresChantier';
 
@@ -18,7 +19,6 @@ export const ONGLETS: { v: Onglet; l: string }[] = [
 
 export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
   const ch = useLive(`chantier:${id}`, () => db.chantiers.get(id).then((c) => c ?? null), [id]);
-  const nbPoints = useLive(`nbPoints:${id}`, () => db.points.where('chantierId').equals(id).count(), [id]);
   const [params, setParams] = useState(false);
 
   const fermerParams = () => setParams(false);
@@ -56,13 +56,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
         ))}
       </nav>
 
-      {onglet === 'checklist' && (
-        <div className="pad" style={{ marginTop: 16 }}>
-          <div className="card empty">
-            <span className="mono">{nbPoints ?? 0}</span> points de contrôle importés.<br />La checklist arrive à l’étape (b).
-          </div>
-        </div>
-      )}
+      {onglet === 'checklist' && <OngletChecklist chantier={ch} />}
       {onglet === 'reserves' && (
         <div className="pad" style={{ marginTop: 16 }}>
           <div className="card empty">Le suivi des réserves arrive à l’étape (c).</div>
