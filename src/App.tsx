@@ -1,4 +1,7 @@
-import { useRoute } from './router';
+import { useEffect } from 'react';
+import { aller, useRoute } from './router';
+import { demarrage } from './drive/sauvegardeDrive';
+import { ouvrirListeDrive } from './screens/SectionDrive';
 import { Accueil } from './screens/Accueil';
 import { ImportChantier } from './screens/ImportChantier';
 import { Chantier, ONGLETS, type Onglet } from './screens/Chantier';
@@ -9,7 +12,14 @@ import { Exports } from './screens/Exports';
 import { Toaster } from './components/ui';
 import { BandeauMiseAJour, TirerPourActualiser } from './components/Actualisation';
 
+let demarre = false;
+
 export function App() {
+  useEffect(() => {
+    if (demarre) return; // une seule fois (StrictMode monte deux fois en développement)
+    demarre = true;
+    void demarrage().then((intention) => { if (intention === 'lister') { ouvrirListeDrive(); aller('reglages'); } }).catch(() => {});
+  }, []);
   const [a, b, c, d] = useRoute();
   let ecran;
   if (a === 'import') ecran = <ImportChantier />;

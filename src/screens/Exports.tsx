@@ -9,6 +9,7 @@ import { filtrerTrier, type FiltresReserves } from '../domain/reserves';
 import { bloquantNonValide, STATUT_RESERVE } from '../domain/statuts';
 import { filtresReserves } from './OngletReserves';
 import { retour } from '../router';
+import { CarteDrive } from '../components/Drive';
 
 type Format = 'pdf' | 'xlsx';
 interface Pret { titre: string; fichiers: FichierPret[] }
@@ -117,7 +118,9 @@ export function Exports({ chantierId }: { chantierId: number }) {
     <main className="screen">
       <Header sub={d.ch.site || d.ch.nom} title="Exports et sauvegarde" onBack={retourChantier} backLabel="Retour au chantier" />
 
-      <h2 className="sec-title pad" style={{ margin: '18px 0 8px' }}>Exporter</h2>
+      <div className="pad" style={{ marginTop: 14 }}><CarteDrive /></div>
+
+      <h2 className="sec-title pad" style={{ margin: '20px 0 8px' }}>Exporter</h2>
       <section className="card flush" style={{ margin: '0 16px' }} aria-label="Exports">
         <div className="ex">
           <div className="ex-txt">
@@ -149,7 +152,7 @@ export function Exports({ chantierId }: { chantierId: number }) {
         </div>
         <label className="row ex-option">
           <span>Inclure les réserves levées</span>
-          <input type="checkbox" className="switch" checked={levees} onChange={(e) => setLevees(e.target.checked)} />
+          <input type="checkbox" {...{ switch: '' }} className="switch" checked={levees} onChange={(e) => setLevees(e.target.checked)} />
         </label>
 
         <div className="ex">
@@ -161,14 +164,13 @@ export function Exports({ chantierId }: { chantierId: number }) {
         </div>
       </section>
 
-      <h2 className="sec-title pad" style={{ margin: '20px 0 8px' }}>Sauvegarde</h2>
+      <h2 className="sec-title pad" style={{ margin: '20px 0 8px' }}>Sauvegarde sur le téléphone</h2>
       <section className="card" style={{ margin: '0 16px' }} aria-label="Sauvegarde">
         <div className="ex-titre">Sauvegarde complète (ZIP)</div>
         <div className="ink2" style={{ marginTop: 2 }}>Tous les chantiers, photos comprises. À enregistrer dans Fichiers ou à envoyer. Restauration : Réglages.</div>
         <button type="button" className="btn sec-acc block tap" style={{ marginTop: 12 }} onClick={sauvegarder} disabled={!!enCours}>
           {enCours === 'zip' ? <><span className="spinner" aria-hidden />{Math.round(progres * 100)} %</> : <><Archive size={20} strokeWidth={2.2} aria-hidden />Créer la sauvegarde</>}
         </button>
-        <div className="ink2" style={{ marginTop: 8 }}>La sauvegarde automatique sur Google Drive arrive à l’étape (e).</div>
       </section>
       <div style={{ height: 24 }} />
 

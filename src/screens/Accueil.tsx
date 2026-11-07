@@ -7,6 +7,7 @@ import { statistiques, type Stats } from '../domain/checklist';
 import { BarreChecklist } from '../components/BarreChecklist';
 import { aller, lien } from '../router';
 import { Logo } from '../components/Logo';
+import { PuceDrive } from '../components/Drive';
 
 interface Compteurs { ouvertes: number; retard: number; bloquants: number; st: Stats }
 
@@ -39,9 +40,12 @@ export function Accueil() {
           <Logo size={36} />
           <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>Kontrol</span>
         </div>
-        <a className="icon-btn tap" href={lien('reglages')} aria-label="Réglages">
-          <Settings size={24} strokeWidth={2} aria-hidden />
-        </a>
+        <div className="row" style={{ gap: 4 }}>
+          <PuceDrive />
+          <a className="icon-btn tap" href={lien('reglages')} aria-label="Réglages">
+            <Settings size={24} strokeWidth={2} aria-hidden />
+          </a>
+        </div>
       </header>
 
       <div className="pad" style={{ paddingTop: 20 }}>

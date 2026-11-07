@@ -77,7 +77,7 @@ export function EditionPoint({ chantierId, point, lots, lotParDefaut, onClose, o
       <div className="stack" style={{ gap: 14 }}>
         <label className="row" style={{ justifyContent: 'space-between', minHeight: 48 }}>
           <span style={{ fontWeight: 600, color: v.bloquant ? 'var(--r)' : undefined }}>Point bloquant</span>
-          <input type="checkbox" className="switch" checked={v.bloquant} onChange={(e) => set('bloquant', e.target.checked)} />
+          <input type="checkbox" {...{ switch: '' }} className="switch" checked={v.bloquant} onChange={(e) => set('bloquant', e.target.checked)} />
         </label>
         <div className="ink2" style={{ marginTop: -10 }}>À valider avant que l’entreprise poursuive (point d’arrêt, agrément avant commande…).</div>
 

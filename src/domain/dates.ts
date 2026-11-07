@@ -60,6 +60,11 @@ export function fmtCourt(iso?: string): string {
   return `${d}/${m}`;
 }
 
+/** Jour local « AAAA-MM-JJ » d'un horodatage ISO complet (et non le jour UTC). */
+export function jourLocal(ts: string): string {
+  return toIso(new Date(ts));
+}
+
 /** HH:MM (24 h) depuis un horodatage ISO complet. */
 export function fmtHeure(ts: string): string {
   const d = new Date(ts);

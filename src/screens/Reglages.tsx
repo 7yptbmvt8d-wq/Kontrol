@@ -8,6 +8,7 @@ import { nouvelleVersionDisponible, rafraichir, versionChargee } from '../pwa/mi
 import { getReglage, setReglage } from '../db/schema';
 import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
+import { SectionDrive } from './SectionDrive';
 
 export function Reglages() {
   const [theme, setTheme] = useState<Theme>('sombre');
@@ -21,6 +22,13 @@ export function Reglages() {
     getReglage<Theme>('theme', 'sombre').then(setTheme);
     navigator.storage?.persisted?.().then(setPersist).catch(() => setPersist(null));
   }, []);
+
+  const lireFichier = async (f: Blob, nom: string) => {
+    try {
+      const { lireSauvegarde } = await import('../services/sauvegarde');
+      setLue({ nom, ...(await lireSauvegarde(f)) });
+    } catch (err) { toast((err as Error).message); }
+  };
 
   const choisir = async (t: Theme) => {
     setTheme(t);
@@ -45,18 +53,15 @@ export function Reglages() {
             Stockage persistant : {persist === null ? 'inconnu' : persist ? 'accordé' : 'non accordé (l’app s’installe sur l’écran d’accueil pour l’obtenir)'}
           </div>
         </section>
+        <SectionDrive onRestaurer={(blob, nom) => void lireFichier(blob, nom)} />
         <section className="card stack" style={{ gap: 10 }} aria-label="Sauvegarde et restauration">
-          <h2 className="sec-title">Sauvegarde</h2>
-          <div className="ink2">Créer une sauvegarde : écran Exports d’un chantier (bouton ↓). Elle contient tous les chantiers et leurs photos.</div>
+          <h2 className="sec-title">Sauvegarde sur le téléphone</h2>
+          <div className="ink2">Créer une sauvegarde ZIP : écran Exports d’un chantier (bouton ↓). Elle contient tous les chantiers et leurs photos.</div>
           <input ref={fichier} type="file" accept=".zip,application/zip" className="sr-only" tabIndex={-1} aria-hidden
-            onChange={async (e) => {
+            onChange={(e) => {
               const f = e.target.files?.[0];
               e.target.value = '';
-              if (!f) return;
-              try {
-                const { lireSauvegarde } = await import('../services/sauvegarde');
-                setLue({ nom: f.name, ...(await lireSauvegarde(f)) });
-              } catch (err) { toast((err as Error).message); }
+              if (f) void lireFichier(f, f.name);
             }} />
           <button type="button" className="btn sec block tap" onClick={() => fichier.current?.click()}>
             <ArchiveRestore size={20} strokeWidth={2.2} aria-hidden />Restaurer une sauvegarde (ZIP)

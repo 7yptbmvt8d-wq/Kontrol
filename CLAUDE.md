@@ -101,6 +101,16 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - Sauvegarde : `src/services/sauvegarde.ts` — ZIP `donnees.json` (toutes les tables, format `kontrol-sauvegarde` v1,
   n° de schéma) + `photos/<id>.jpg` ; restauration (Réglages) = remplacement complet, avec mise au schéma courant.
   Même format pour Google Drive (étape e).
+- Google Drive : `src/drive/` — `oauth.ts` (flux « jeton » OAuth par **redirection pleine page**, pas de pop-up :
+  les pop-ups ne reviennent pas à une PWA iOS ; portée `drive.file` seule ; jeton 1 h en localStorage ;
+  importé EN PREMIER dans main.tsx pour retirer le jeton de l'URL avant le routeur hash ; `state` vérifié),
+  `api.ts` (REST Drive v3 : dossier « Kontrol », envoi reprenable avec progression, liste, suppression, téléchargement),
+  `sauvegardeDrive.ts` (état partagé `useDrive`, sauvegarde = même ZIP que la sauvegarde locale, 10 conservées,
+  automatique à l'ouverture si > 24 h et données modifiées ; jeton expiré → reconnexion silencieuse `prompt=none`
+  au plus toutes les 6 h ; refus → pastille « Reconnecter » ; l'action demandée reprend au retour de Google).
+  `src/db/suivi.ts` : crochets Dexie → date de dernière modification (« En attente »).
+  Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`). UI : `components/Drive.tsx`
+  (pastille accueil, carte Exports), `screens/SectionDrive.tsx` (Réglages : configuration, restauration Drive).
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
   `OngletChecklist`, `DetailPoint` (état en un toucher, commentaire auto-enregistré, photos), `EditionPoint`.
 
@@ -119,7 +129,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1
-(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive · (f) PWA hors ligne.
+(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

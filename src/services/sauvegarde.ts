@@ -2,6 +2,7 @@
 // Même format pour la sauvegarde locale et la sauvegarde Google Drive (étape e).
 import JSZip from 'jszip';
 import { db } from '../db/schema';
+import { marquerSynchronise } from '../db/suivi';
 import type { Photo } from '../domain/types';
 
 export const FORMAT = 'kontrol-sauvegarde';
@@ -94,5 +95,6 @@ export async function restaurer(zip: JSZip, contenu: Contenu, onProgres?: (x: nu
     for (const t of TABLES) await db.table(t).bulkAdd(contenu.tables[t]);
     await db.photos.bulkAdd(photos);
   });
+  marquerSynchronise(0); // données identiques à une sauvegarde existante : rien à renvoyer
   onProgres?.(1);
 }

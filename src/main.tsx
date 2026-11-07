@@ -1,3 +1,5 @@
+// En premier : retire le jeton Google de l'URL avant que le routeur ne lise l'adresse.
+import './drive/oauth';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 // Polices embarquées, jeu latin uniquement (français) : allège le chargement et le cache hors ligne.
@@ -8,6 +10,7 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import '@fontsource/ibm-plex-mono/latin-600.css';
 import './styles/tokens.css';
 import './styles/base.css';
+import './db/suivi';
 import { App } from './App';
 import { getReglage } from './db/schema';
 import { appliquerTheme, type Theme } from './theme';
