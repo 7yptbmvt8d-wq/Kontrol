@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, RefreshCw } from 'lucide-react';
 import { nouvelleVersionDisponible, rafraichir } from '../pwa/miseAJour';
+import { surNouvelleVersion } from '../pwa/sw';
 
 const SEUIL = 80; // px de glissé du doigt pour déclencher
 
@@ -70,9 +71,10 @@ export function BandeauMiseAJour() {
       if (await nouvelleVersionDisponible()) setDispo(true);
     };
     void verifier();
+    const desabonner = surNouvelleVersion(() => setDispo(true)); // nouvelle version déjà téléchargée par le service worker
     document.addEventListener('visibilitychange', verifier);
     const minuterie = window.setInterval(verifier, 15 * 60_000);
-    return () => { document.removeEventListener('visibilitychange', verifier); window.clearInterval(minuterie); };
+    return () => { desabonner(); document.removeEventListener('visibilitychange', verifier); window.clearInterval(minuterie); };
   }, []);
   if (!dispo) return null;
   return (

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
 import pkg from './package.json' with { type: 'json' };
 
@@ -14,7 +15,22 @@ const date = new Intl.DateTimeFormat('fr-FR', {
 // GitHub Pages : l'app est servie sous /Kontrol/
 export default defineConfig({
   base: '/Kontrol/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Hors ligne : l'app entière (y compris les modules PDF / Excel chargés à la demande, polices, icônes) est
+    // mise en cache par le service worker. Mise à jour « à la demande » : bandeau + rechargement.
+    VitePWA({
+      registerType: 'prompt',
+      injectRegister: false, // enregistrement dans src/pwa/sw.ts
+      manifest: false, // public/manifest.webmanifest
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}'],
+        navigateFallback: 'index.html',
+        cleanupOutdatedCaches: true,
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+      },
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_BUILD__: JSON.stringify(build),

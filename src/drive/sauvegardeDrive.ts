@@ -151,14 +151,34 @@ export async function demarrage(): Promise<ConfigDrive['intention']> {
     if (intention === 'lister') return 'lister';
     if (intention === 'sauvegarder' || !config.email) { void sauvegarderMaintenant().catch(() => {}); return undefined; }
   }
-  if (!connecte() || !config.auto || !navigator.onLine) return undefined;
+  lancerSiDue(true);
+  return undefined;
+}
+
+/**
+ * Sauvegarde automatique si elle est due (> 24 h et données modifiées).
+ * `redirection` : autorise la reconnexion silencieuse par Google (seulement à l'ouverture de l'app,
+ * jamais en cours d'utilisation pour ne pas interrompre une saisie).
+ */
+export function lancerSiDue(redirection: boolean) {
+  if (!connecte() || !config.auto || !navigator.onLine || enCours) return;
   const due = !config.derniere || Date.now() - Date.parse(config.derniere.date) > DELAI_AUTO;
-  if (!due || !enAttente()) return undefined;
-  if (jetonValide()) { void sauvegarderMaintenant().catch(() => {}); return undefined; }
+  if (!due || !enAttente()) return;
+  if (jetonValide()) { void sauvegarderMaintenant().catch(() => {}); return; }
   // Jeton expiré : reconnexion silencieuse (au plus une tentative toutes les 6 h)
-  if (!config.reconnexion && (!config.tentativeSilencieuse || Date.now() - config.tentativeSilencieuse > 6 * 3600_000)) {
+  if (redirection && !config.reconnexion && (!config.tentativeSilencieuse || Date.now() - config.tentativeSilencieuse > 6 * 3600_000)) {
     majConfig({ tentativeSilencieuse: Date.now(), intention: 'sauvegarder' });
     connecter({ silencieux: true, email: config.email });
   }
-  return undefined;
+}
+
+// Retour du réseau (saisie faite hors ligne) : envoi de la sauvegarde due, sans redirection
+window.addEventListener('online', () => lancerSiDue(false));
+
+/** État de la connexion réseau (pour l'affichage). */
+export function useEnLigne() {
+  return useSyncExternalStore((f) => {
+    window.addEventListener('online', f); window.addEventListener('offline', f);
+    return () => { window.removeEventListener('online', f); window.removeEventListener('offline', f); };
+  }, () => navigator.onLine);
 }

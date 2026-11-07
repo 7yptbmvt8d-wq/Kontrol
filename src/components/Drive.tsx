@@ -1,6 +1,6 @@
 import { CloudOff, CloudUpload, CloudCheck, Cloud } from 'lucide-react';
 import { fmtCourt, fmtDate, fmtHeure, aujourdHui, jourLocal } from '../domain/dates';
-import { CONSERVER, connecte, enAttente, reglerAuto, sauvegarderMaintenant, useDrive } from '../drive/sauvegardeDrive';
+import { CONSERVER, connecte, enAttente, reglerAuto, sauvegarderMaintenant, useDrive, useEnLigne } from '../drive/sauvegardeDrive';
 import { NOM_DOSSIER } from '../drive/api';
 import { taille } from '../services/exports/partage';
 import { toast } from './ui';
@@ -9,8 +9,13 @@ import { lien } from '../router';
 /** Pastille d'état Drive (en-tête de l'accueil) : verte à jour, orange en attente / à reconnecter, grise non configurée. */
 export function PuceDrive() {
   const { config, etat } = useDrive();
+  const enLigne = useEnLigne();
   let ton = 'n', texte = 'Drive', Icone = Cloud;
-  if (etat.phase === 'sauvegarde') { ton = 'b'; texte = `Drive ${Math.round(etat.progres * 100)} %`; Icone = CloudUpload; }
+  if (!enLigne) {
+    // Hors ligne : tout est enregistré sur le téléphone ; l'envoi se fera au retour du réseau
+    if (connecte(config) && enAttente(config)) { ton = 'o'; texte = 'En attente'; Icone = CloudUpload; }
+    else { ton = 'n'; texte = 'Hors ligne'; Icone = CloudOff; }
+  } else if (etat.phase === 'sauvegarde') { ton = 'b'; texte = `Drive ${Math.round(etat.progres * 100)} %`; Icone = CloudUpload; }
   else if (!connecte(config)) { ton = 'n'; texte = 'Drive'; Icone = CloudOff; }
   else if (config.reconnexion || etat.phase === 'erreur') { ton = 'o'; texte = 'Reconnecter'; Icone = CloudOff; }
   else if (enAttente(config)) { ton = 'o'; texte = 'En attente'; Icone = CloudUpload; }
@@ -30,6 +35,7 @@ export function PuceDrive() {
 /** Carte « Sauvegarde Drive » (maquette Exports) : état, horodatage, dossier, contenu, auto, sauvegarder maintenant. */
 export function CarteDrive() {
   const { config, etat } = useDrive();
+  const enLigne = useEnLigne();
   const ok = connecte(config) && !config.reconnexion && etat.phase !== 'erreur';
   const titre = etat.phase === 'sauvegarde' ? 'Sauvegarde en cours…'
     : !connecte(config) ? 'Google Drive non connecté'
@@ -74,8 +80,8 @@ export function CarteDrive() {
             </label>
           </dl>
           <div style={{ padding: '0 14px 14px' }}>
-            <button type="button" className="btn sec-acc block tap" disabled={etat.phase === 'sauvegarde'} onClick={lancer}>
-              {etat.phase === 'sauvegarde' ? <><span className="spinner" aria-hidden />{Math.round(etat.progres * 100)} %</> : config.reconnexion ? 'Se reconnecter et sauvegarder' : 'Sauvegarder maintenant'}
+            <button type="button" className="btn sec-acc block tap" disabled={etat.phase === 'sauvegarde' || !enLigne} onClick={lancer}>
+              {etat.phase === 'sauvegarde' ? <><span className="spinner" aria-hidden />{Math.round(etat.progres * 100)} %</> : !enLigne ? 'Hors ligne : envoi au retour du réseau' : config.reconnexion ? 'Se reconnecter et sauvegarder' : 'Sauvegarder maintenant'}
             </button>
           </div>
         </>

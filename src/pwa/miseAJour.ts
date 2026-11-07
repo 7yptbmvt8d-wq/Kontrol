@@ -1,6 +1,8 @@
 // Mise à jour de l'app : détection d'une nouvelle version en ligne et rechargement forcé (sans cache).
 // GitHub Pages autorise le navigateur à garder index.html 10 min en cache : on interroge le serveur sans cache.
 
+import { activerDerniereVersion, swActif } from './sw';
+
 const MOTIF = /assets\/index-[\w-]+\.js/;
 
 /** Identifiant de la version chargée (nom haché du script principal), ou null en développement. */
@@ -29,10 +31,20 @@ export async function nouvelleVersionDisponible(): Promise<boolean> {
   return !!distante && distante !== locale;
 }
 
-/** Recharge l'app en remplaçant la page gardée en cache par celle du serveur. */
+/**
+ * Passe à la dernière version et recharge.
+ * - Avec le service worker (cas normal) : il télécharge la nouvelle version, l'active, puis recharge ;
+ *   hors ligne ou déjà à jour : rechargement depuis le cache.
+ * - Sans service worker (première ouverture) : la page gardée en cache HTTP est remplacée par celle du serveur.
+ */
 export async function rafraichir(): Promise<void> {
-  try {
-    await fetch(racine(), { cache: 'reload' }); // met à jour le cache HTTP de index.html
-  } catch { /* hors ligne : simple rechargement */ }
+  if (swActif()) {
+    if ((await activerDerniereVersion()) === 'maj') {
+      setTimeout(() => location.reload(), 4000); // filet : rechargement normalement fait par le service worker
+      return;
+    }
+  } else {
+    try { await fetch(racine(), { cache: 'reload' }); } catch { /* hors ligne */ }
+  }
   location.reload();
 }

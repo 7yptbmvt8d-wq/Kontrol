@@ -6,7 +6,7 @@ checklist de contrôle issue du CCTP/CCAP et suivi des réserves. Interface en f
 ## Contraintes impératives
 - **Local-first** : toutes les données sur le téléphone (IndexedDB via Dexie). Aucun serveur, aucune API externe,
   **sauf** la sauvegarde Google Drive (OAuth, scope `drive.file` uniquement).
-- Hors ligne (service worker, vite-plugin-pwa — étape f). Polices embarquées (@fontsource), jamais Google Fonts.
+- Hors ligne (service worker, vite-plugin-pwa). Polices embarquées (@fontsource), jamais Google Fonts.
 - Hébergement du code : GitHub Pages uniquement (`base: '/Kontrol/'`, routage par hash `#/…`).
 - Utilisation à une main, en extérieur. Format de référence iPhone 390 × 844.
 
@@ -123,13 +123,20 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - Panneaux du bas : composant `Sheet` (animation ≤ 200 ms, `prefers-reduced-motion` respecté).
 - Sous une barre d'action basse fixe, ajouter `<div className="bar-space" />` en fin de contenu.
 - Écritures multiples en une transaction Dexie.
-- Mises à jour : `src/pwa/miseAJour.ts` compare le script chargé à celui en ligne (requête sans cache) ;
-  bandeau « Nouvelle version disponible » + « tirer pour actualiser » (`components/Actualisation.tsx`) +
-  bouton dans Réglages. GitHub Pages met index.html en cache 10 min : toujours recharger via `rafraichir()`.
+- Hors ligne : vite-plugin-pwa (`registerType: 'prompt'`, manifeste = `public/manifest.webmanifest`) ; tout le build
+  est précaché (y compris les modules PDF / Excel / sauvegarde chargés à la demande, polices woff2, icônes).
+  `src/pwa/sw.ts` : enregistrement, recherche de mise à jour au retour dans l'app et toutes les 30 min,
+  `activerDerniereVersion()` (télécharge, active, recharge). Toast « App prête pour une utilisation hors ligne ».
+- Mises à jour : `src/pwa/miseAJour.ts` compare le script chargé à celui en ligne (requête sans cache, non
+  interceptée par le service worker) ; bandeau « Nouvelle version disponible » + « tirer pour actualiser »
+  (`components/Actualisation.tsx`) + bouton dans Réglages. Toujours recharger via `rafraichir()` (passe par le
+  service worker ; sans lui, contourne le cache HTTP de 10 min de GitHub Pages).
+- Réseau : pastille « Hors ligne » / « En attente » ; au retour du réseau, sauvegarde Drive due envoyée
+  (`lancerSiDue(false)` : jamais de redirection Google en cours d'utilisation).
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1
-(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne.
+(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne ✅ — **V1 complète (1.0.0)**.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)
