@@ -76,7 +76,7 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <input id="p-rec" type="date" className="mono" value={v.dateReceptionReelle ?? ''} onChange={(e) => set('dateReceptionReelle', e.target.value)} />
           </div>
           <div className="frow">
-            <label className="rl" htmlFor="p-av">Avancement (%)</label>
+            <label className="rl" htmlFor="p-av">Avancement travaux (%)</label>
             <input id="p-av" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={avancement}
               onChange={(e) => setAvancement(e.target.value.replace(/[^\d]/g, '').slice(0, 3))} onFocus={(e) => e.target.select()} />
           </div>

@@ -3,16 +3,20 @@ import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { fmtJourLong } from '../domain/dates';
 import { PHASE_CHANTIER, bloquantNonValide, estOuverte, statutAffiche } from '../domain/statuts';
+import { estValide } from '../domain/checklist';
 import { aller, lien } from '../router';
 import { Logo } from '../components/Logo';
 
-interface Compteurs { ouvertes: number; retard: number; bloquants: number }
+/** Avancement de la checklist : points validés (conformes ou sans objet) / total. */
+const pct = (k: { valides: number; points: number }) => (k.points ? Math.round((k.valides / k.points) * 100) : 0);
+
+interface Compteurs { ouvertes: number; retard: number; bloquants: number; valides: number; points: number }
 
 export function Accueil() {
   const data = useLive('accueil', async () => {
     const [chantiers, reserves, points] = await Promise.all([db.chantiers.toArray(), db.reserves.toArray(), db.points.toArray()]);
     const par = new Map<number, Compteurs>();
-    for (const c of chantiers) par.set(c.id!, { ouvertes: 0, retard: 0, bloquants: 0 });
+    for (const c of chantiers) par.set(c.id!, { ouvertes: 0, retard: 0, bloquants: 0, valides: 0, points: 0 });
     for (const r of reserves) {
       const k = par.get(r.chantierId);
       if (!k || !estOuverte(r)) continue;
@@ -21,7 +25,10 @@ export function Accueil() {
     }
     for (const p of points) {
       const k = par.get(p.chantierId);
-      if (k && bloquantNonValide(p)) k.bloquants++;
+      if (!k) continue;
+      k.points++;
+      if (estValide(p)) k.valides++;
+      if (bloquantNonValide(p)) k.bloquants++;
     }
     chantiers.sort((a, b) => b.majLe.localeCompare(a.majLe));
     return { chantiers, par };
@@ -70,9 +77,9 @@ export function Accueil() {
               <div style={{ fontSize: 19, fontWeight: 600, lineHeight: 1.25, marginTop: 6 }}>{c.nom}</div>
               <div className="row" style={{ marginTop: 12, gap: 10 }}>
                 <div className="bar" style={{ flex: '1 1 auto' }} aria-hidden>
-                  <span style={{ width: `${c.avancementTravaux}%`, background: 'var(--accent)', borderRadius: 999 }} />
+                  <span style={{ width: `${pct(k)}%`, background: 'var(--accent)', borderRadius: 999 }} />
                 </div>
-                <span className="mono" style={{ fontWeight: 600 }}>{c.avancementTravaux} %</span>
+                <span className="mono" style={{ fontWeight: 600 }} aria-label={`${k.valides} points validés sur ${k.points}`}>{k.valides}/{k.points}</span>
               </div>
               <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
                 <span className={`chip ${k.ouvertes ? 't-b' : 't-n'}`}>{k.ouvertes} {k.ouvertes > 1 ? 'ouvertes' : 'ouverte'}</span>
