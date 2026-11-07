@@ -106,6 +106,9 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - Panneaux du bas : composant `Sheet` (animation ≤ 200 ms, `prefers-reduced-motion` respecté).
 - Sous une barre d'action basse fixe, ajouter `<div className="bar-space" />` en fin de contenu.
 - Écritures multiples en une transaction Dexie.
+- Mises à jour : `src/pwa/miseAJour.ts` compare le script chargé à celui en ligne (requête sans cache) ;
+  bandeau « Nouvelle version disponible » + « tirer pour actualiser » (`components/Actualisation.tsx`) +
+  bouton dans Réglages. GitHub Pages met index.html en cache 10 min : toujours recharger via `rafraichir()`.
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1

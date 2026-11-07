@@ -6,6 +6,7 @@ import { Reglages } from './screens/Reglages';
 import { DetailPoint } from './screens/DetailPoint';
 import { DetailReserve } from './screens/DetailReserve';
 import { Toaster } from './components/ui';
+import { BandeauMiseAJour, TirerPourActualiser } from './components/Actualisation';
 
 export function App() {
   const [a, b, c, d] = useRoute();
@@ -25,6 +26,8 @@ export function App() {
       <div className="statusbar" aria-hidden />
       {ecran}
       <Toaster />
+      <TirerPourActualiser />
+      <BandeauMiseAJour />
     </>
   );
 }

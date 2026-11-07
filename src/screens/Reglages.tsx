@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Header, Segment } from '../components/ui';
+import { RefreshCw } from 'lucide-react';
+import { Header, Segment, toast } from '../components/ui';
+import { nouvelleVersionDisponible, rafraichir, versionChargee } from '../pwa/miseAJour';
 import { getReglage, setReglage } from '../db/schema';
 import { appliquerTheme, type Theme } from '../theme';
 import { retour } from '../router';
@@ -7,6 +9,7 @@ import { retour } from '../router';
 export function Reglages() {
   const [theme, setTheme] = useState<Theme>('sombre');
   const [persist, setPersist] = useState<boolean | null>(null);
+  const [verif, setVerif] = useState(false);
 
   useEffect(() => {
     getReglage<Theme>('theme', 'sombre').then(setTheme);
@@ -36,7 +39,19 @@ export function Reglages() {
             Stockage persistant : {persist === null ? 'inconnu' : persist ? 'accordé' : 'non accordé (l’app s’installe sur l’écran d’accueil pour l’obtenir)'}
           </div>
         </section>
-        <div className="ink2 mono" style={{ textAlign: 'center' }}>v{__APP_VERSION__}</div>
+        <section className="card stack" style={{ gap: 10 }}>
+          <h2 className="sec-title">Version</h2>
+          <div className="mono ink2" style={{ overflowWrap: 'anywhere' }}>v{__APP_VERSION__} · {versionChargee()?.replace(/^assets\/index-|\.js$/g, '') ?? 'dév.'}</div>
+          <button type="button" className="btn sec block tap" disabled={verif} onClick={async () => {
+            setVerif(true);
+            const dispo = await nouvelleVersionDisponible();
+            setVerif(false);
+            if (dispo) void rafraichir(); else toast('L’app est à jour');
+          }}>
+            <RefreshCw size={20} strokeWidth={2.2} aria-hidden />{verif ? 'Vérification…' : 'Rechercher une mise à jour'}
+          </button>
+          <div className="ink2">Astuce : sur n’importe quel écran, tirez vers le bas depuis le haut pour actualiser.</div>
+        </section>
       </div>
     </main>
   );

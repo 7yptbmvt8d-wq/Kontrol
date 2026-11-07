@@ -295,3 +295,21 @@ dl { margin: 0; }
 .cell { padding: 10px 12px; }
 .cell dt { font-size: 16px; color: var(--ink2); }
 .cell dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+
+/* ---------- Actualisation ---------- */
+.ptr {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 4px); z-index: 80;
+  display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 6px; border-radius: var(--rad-pill);
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: 16px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35); pointer-events: none; white-space: nowrap;
+}
+.ptr-ico { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; transition: transform .1s; }
+.ptr-tourne { animation: tourne .8s linear infinite; }
+.maj {
+  position: fixed; left: var(--gutter); right: var(--gutter); z-index: 65;
+  top: calc(env(safe-area-inset-top) + 8px);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 8px 8px 16px; border-radius: var(--rad-md); background: var(--surface); border: 1px solid var(--accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35); font-weight: 600;
+}
+.maj .btn { flex: 0 0 auto; white-space: nowrap; padding: 0 14px; }
