@@ -60,9 +60,14 @@ export function remplacer(...parts: (string | number)[]) {
   window.location.replace(cible);
 }
 
-/** Retour vers le parent logique. */
+/**
+ * Retour : revient à l'écran précédent s'il est le parent, ou s'il appartient au même chantier
+ * (ex. réserve ouverte depuis un point → retour au point) ; sinon va au parent. Jamais de sortie de l'app.
+ */
 export function retour(...parent: (string | number)[]) {
   const cible = lien(...parent);
-  if (pile.length >= 2 && pile[pile.length - 2] === cible) history.back();
+  const prec = pile.length >= 2 ? pile[pile.length - 2] : undefined;
+  const chantier = /^#\/chantier\/\d+/.exec(cible)?.[0];
+  if (prec && (prec === cible || (chantier && (prec === chantier || prec.startsWith(`${chantier}/`))))) history.back();
   else aller(...parent);
 }

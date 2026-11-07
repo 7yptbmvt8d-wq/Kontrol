@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Plus, SlidersHorizontal } from 'lucide-react';
+import { Download, Plus, SlidersHorizontal } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { Header } from '../components/ui';
 import { pourcentage, statistiques } from '../domain/checklist';
-import { lien, remplacer, retour } from '../router';
+import { aller, lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
 import { OngletChecklist } from './OngletChecklist';
 import { OngletReserves } from './OngletReserves';
@@ -50,9 +50,14 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
         onBack={retourAccueil}
         backLabel="Retour à mes chantiers"
         right={
-          <button type="button" className="icon-btn tap" aria-label="Paramètres du chantier et des marchés" onClick={() => setParams(true)}>
-            <SlidersHorizontal size={24} strokeWidth={2} aria-hidden />
-          </button>
+          <>
+            <button type="button" className="icon-btn tap" aria-label="Exports et sauvegarde" onClick={() => aller('chantier', id, 'exports')}>
+              <Download size={24} strokeWidth={2} aria-hidden />
+            </button>
+            <button type="button" className="icon-btn tap" aria-label="Paramètres du chantier et des marchés" onClick={() => setParams(true)}>
+              <SlidersHorizontal size={24} strokeWidth={2} aria-hidden />
+            </button>
+          </>
         }
       />
       <nav className="tabs" aria-label="Sections du chantier">

@@ -11,6 +11,9 @@ import { Vignette } from '../components/Photos';
 import { aller, lien } from '../router';
 
 const memoire = new Map<number, FiltresReserves>();
+/** Filtres actifs de l'onglet Réserves (repris par l'export « liste des réserves »). */
+export const filtresReserves = (chantierId: number): FiltresReserves =>
+  memoire.get(chantierId) ?? { statut: 'toutes', lot: '', entreprise: '', tri: 'echeance' };
 
 const STATUTS: { v: FiltreStatut; l: string; dot?: string }[] = [
   { v: 'toutes', l: 'Toutes' },

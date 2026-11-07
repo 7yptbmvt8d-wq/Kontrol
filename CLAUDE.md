@@ -86,7 +86,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
-- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves).
+- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde).
 - `src/services/photos.ts` — compression (1600 px, JPEG 0,7) + vignette 240 px ; `src/components/Photos.tsx` — bandeau, visionneuse.
 - Réserves : `src/domain/reserves.ts` (compteurs, filtres, tri), `src/services/reserves.ts` (création numérotée R-01…,
   relance, levée signalée, levée avec photo obligatoire, refus, réouverture — historique tenu à chaque action),
@@ -94,6 +94,13 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   « En retard » = échéance dépassée et statut ouvert ou relancé (une levée à vérifier attend le MOE, pas l'entreprise).
   Bouton « + » flottant sur les onglets Checklist, Réserves et Jalons. Dictée : `components/Dictee.tsx`
   (Web Speech API si disponible, sinon micro du clavier iOS).
+- Exports : écran `Exports` (bouton ↓ de l'en-tête chantier). `src/services/exports/` : `donnees.ts` (chargement, libellés),
+  `texte.ts` (points non soldés à coller dans Claude), `xlsx.ts` (SheetJS, vraies dates Excel), `pdf.ts` (jsPDF A4,
+  photos réduites à 1000 px ; polices standard = Windows-1252 → `pdfTexte()` remplace ≥, ≤…), `partage.ts`
+  (feuille de partage iOS via un 2ᵉ toucher « Fichier prêt », sinon téléchargement). xlsx et pdf chargés à la demande.
+- Sauvegarde : `src/services/sauvegarde.ts` — ZIP `donnees.json` (toutes les tables, format `kontrol-sauvegarde` v1,
+  n° de schéma) + `photos/<id>.jpg` ; restauration (Réglages) = remplacement complet, avec mise au schéma courant.
+  Même format pour Google Drive (étape e).
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
   `OngletChecklist`, `DetailPoint` (état en un toucher, commentaire auto-enregistré, photos), `EditionPoint`.
 
@@ -112,7 +119,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1
-(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports · (e) sauvegarde Drive · (f) PWA hors ligne.
+(a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive · (f) PWA hors ligne.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)
