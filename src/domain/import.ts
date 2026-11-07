@@ -241,6 +241,7 @@ export function validerImport(texte: string): ResultatValidation {
       const v = j.echeance.jours;
       const d = lireDuree(v);
       if (reference === 'autre') {
+        if (d) jours = d.jours; // conservé pour information (ex. « 15 j après l'OS concerné »)
         avert(`${cc}.echeance`, 'Date à saisir dans l’app (référence « autre »).');
       } else if (!d) {
         avert(`${cc}.echeance.jours`, v === undefined || v === null || v === '' ? 'Durée non précisée : date à saisir dans l’app.' : `Durée « ${String(v)} » illisible : date à saisir dans l’app.`);

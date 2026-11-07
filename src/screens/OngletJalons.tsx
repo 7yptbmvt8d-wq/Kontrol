@@ -83,8 +83,8 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
               else if (st === 'en_retard') sous = `En retard · +${ecartJours(date!, today)} j`;
               else if (st === 'a_venir') {
                 const n = ecartJours(today, date!);
-                sous = `${an}${REF_LIB[j.reference]}${j.reference !== 'autre' ? ` + ${j.jours} j` : ''} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
-              } else sous = j.reference === 'autre' ? 'Date à saisir' : j.reference === 'reception' && ctx.dateOS ? 'Délai d’exécution inconnu' : 'Date d’OS à saisir';
+                sous = `${an}${REF_LIB[j.reference]}${j.reference !== 'autre' ? ` ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j` : ''} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
+              } else sous = j.reference === 'autre' ? `Date à saisir${j.jours ? ` · délai ${j.jours} j` : ''}` : j.reference === 'reception' && ctx.dateOS ? 'Délai d’exécution inconnu' : 'Date d’OS à saisir';
               return (
                 <li key={j.uid}>
                   <div className="tl-date" style={{ color: t.date }}>{fmtCourt(date)}</div>
@@ -191,7 +191,7 @@ function EditionJalon({ j, date, ctx, onClose }: { j: Jalon; date?: string; ctx:
       <div className="stack">
         <dl className="card flush">
           <div className="kv"><dt>Échéance</dt><dd className="mono">{fmtDate(j.reference === 'autre' ? fixe || undefined : date)}</dd></div>
-          <div className="kv"><dt>Calcul</dt><dd>{j.reference === 'autre' ? 'Date saisie manuellement' : `${base} + ${j.jours} j`}</dd></div>
+          <div className="kv"><dt>Calcul</dt><dd>{j.reference === 'autre' ? `Date saisie manuellement${j.jours ? ` · délai indiqué : ${j.jours} j` : ''}` : `${base} ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j`}</dd></div>
           <div className="kv"><dt>État</dt><dd>{realise ? <Pastille ton="g">Fait</Pastille> : '—'}</dd></div>
         </dl>
         {j.reference === 'autre' && (
