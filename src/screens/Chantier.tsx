@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Plus, SlidersHorizontal } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { Header } from '../components/ui';
 import { lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
 import { OngletChecklist } from './OngletChecklist';
+import { OngletReserves } from './OngletReserves';
+import { SaisieReserve } from './SaisieReserve';
 import { OngletIntervenants } from './OngletIntervenants';
 import { ParametresChantier } from './ParametresChantier';
 
@@ -20,6 +22,7 @@ export const ONGLETS: { v: Onglet; l: string }[] = [
 export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
   const ch = useLive(`chantier:${id}`, () => db.chantiers.get(id).then((c) => c ?? null), [id]);
   const [params, setParams] = useState(false);
+  const [saisie, setSaisie] = useState(false);
 
   const fermerParams = () => setParams(false);
   const retourAccueil = () => retour('');
@@ -57,14 +60,19 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
       </nav>
 
       {onglet === 'checklist' && <OngletChecklist chantier={ch} />}
-      {onglet === 'reserves' && (
-        <div className="pad" style={{ marginTop: 16 }}>
-          <div className="card empty">Le suivi des réserves arrive à l’étape (c).</div>
-        </div>
-      )}
+      {onglet === 'reserves' && <OngletReserves chantier={ch} />}
       {onglet === 'jalons' && <OngletJalons chantier={ch} onParams={() => setParams(true)} />}
       {onglet === 'intervenants' && <OngletIntervenants chantierId={id} />}
 
+      {onglet !== 'intervenants' && (
+        <>
+          <div style={{ height: 96 }} aria-hidden />
+          <button type="button" className="fab tap" aria-label="Nouvelle réserve" onClick={() => setSaisie(true)}>
+            <Plus size={30} strokeWidth={2.8} aria-hidden />
+          </button>
+        </>
+      )}
+      {saisie && <SaisieReserve chantierId={id} onClose={() => setSaisie(false)} />}
       {params && <ParametresChantier chantier={ch} onClose={fermerParams} />}
     </main>
   );

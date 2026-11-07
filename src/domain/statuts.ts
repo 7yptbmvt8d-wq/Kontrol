@@ -44,9 +44,12 @@ export const ROLE_INTERVENANT: Record<RoleIntervenant, string> = {
   titulaire: 'Titulaire', sous_traitant: 'Sous-traitant', moa: "Maîtrise d'ouvrage", controleur_technique: 'Contrôleur technique', csps: 'CSPS', autre: 'Autre',
 };
 
-/** Statut affiché : « en retard » si échéance dépassée et réserve non levée. */
+/**
+ * Statut affiché : « en retard » si l'échéance est dépassée et que la réserve attend encore l'entreprise
+ * (ouverte ou relancée). Une levée à vérifier attend le MOE : elle n'est pas en retard.
+ */
 export function statutAffiche(r: Reserve, ref = aujourdHui()): StatutReserveAffiche {
-  if (r.statut !== 'leve' && r.echeance && ecartJours(r.echeance, ref) > 0) return 'en_retard';
+  if ((r.statut === 'ouvert' || r.statut === 'relance') && r.echeance && ecartJours(r.echeance, ref) > 0) return 'en_retard';
   return r.statut;
 }
 

@@ -233,6 +233,7 @@ dl { margin: 0; }
 .viewer-date { color: var(--ink2); }
 .viewer-img { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
 .viewer-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.viewer-nav { display: flex; justify-content: space-between; padding: 8px var(--gutter) calc(12px + env(safe-area-inset-bottom)); }
 
 /* ---------- Checklist ---------- */
 .search {
@@ -251,3 +252,46 @@ dl { margin: 0; }
 }
 .etats > button.large { grid-column: span 3; }
 .etats > button[aria-pressed="true"] { box-shadow: inset 0 0 0 1px currentColor; border-color: currentColor; }
+
+/* ---------- Réserves ---------- */
+.saisie-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap-sm); }
+.saisie-photo { position: relative; }
+.saisie-photo .photo-tile { width: 100% !important; height: 104px !important; }
+.saisie-photo-x {
+  position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: var(--scrim); color: var(--on-photo); font-size: 26px; line-height: 1; padding: 0;
+}
+.saisie-photo-add {
+  height: 104px; border: 2px dashed var(--accent); border-radius: var(--rad-md); background: var(--acc-bg); color: var(--ink);
+  font-size: 17px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.saisie-photo-ico { width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; }
+.saisie-desc { position: relative; }
+.saisie-desc-lbl { position: absolute; left: 14px; top: 8px; font-size: 16px; color: var(--ink2); }
+.saisie-desc .textarea { min-height: 92px; padding: 32px 70px 8px 14px; background: var(--surface2); border-radius: var(--rad-md); }
+.dictee {
+  position: absolute; right: 10px; top: 22px; width: 48px; height: 48px; border: 0; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.dictee.actif { background: var(--r); color: var(--on-g); }
+.seg-date {
+  position: relative; height: var(--touch); border-radius: var(--rad-pill); border: 1px solid var(--line); background: var(--surface2);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--ink); overflow: hidden;
+}
+.seg-date.on { background: var(--acc-bg); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+/* Champ date invisible posé sur le bouton : le toucher ouvre le sélecteur natif iOS */
+.seg-date input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; font-size: 16px; }
+
+.res { display: flex; gap: 12px; padding: 12px; border-radius: var(--rad-md); background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+.res.alert { background: var(--r-bg); border-color: var(--r); }
+.res-txt { flex: 1 1 auto; min-width: 0; }
+.fchip-select { position: relative; }
+.fchip-select select { position: absolute; inset: 0; opacity: 0; width: 100%; font-size: 16px; }
+.res-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-sm); }
+.res-ph { position: relative; height: 130px; border-radius: var(--rad-md); background: var(--surface2); color: var(--ink2); border: 0; padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; }
+.res-ph img { width: 100%; height: 100%; object-fit: cover; }
+.res-phl { position: absolute; left: 8px; top: 8px; height: 28px; padding: 0 8px; border-radius: 8px; display: flex; align-items: center; font-size: 16px; font-weight: 600; }
+.res-phn { position: absolute; right: 8px; bottom: 8px; height: 28px; padding: 0 8px; border-radius: 8px; background: var(--scrim); color: var(--on-photo); font-family: var(--font-mono); font-size: 16px; display: flex; align-items: center; }
+.cell { padding: 10px 12px; }
+.cell dt { font-size: 16px; color: var(--ink2); }
+.cell dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }

@@ -29,6 +29,8 @@
 
   /* Ajout Kontrol : bande derrière la barre d'état iOS (texte toujours blanc) — identique dans les deux modes */
   --statusbar: #0B1220;
+  /* Ajout Kontrol : texte posé sur une photo (voile --scrim) */
+  --on-photo: #FFFFFF;
 
   /* Typographie */
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;

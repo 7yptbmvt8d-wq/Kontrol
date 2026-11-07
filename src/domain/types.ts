@@ -87,7 +87,7 @@ export interface PointControle {
 
 export interface EvenementReserve {
   date: string; // horodatage ISO
-  type: 'creation' | 'relance' | 'levee_a_verifier' | 'levee' | 'refus' | 'modification';
+  type: 'creation' | 'relance' | 'levee_a_verifier' | 'levee' | 'refus' | 'reouverture' | 'modification';
   texte: string;
 }
 

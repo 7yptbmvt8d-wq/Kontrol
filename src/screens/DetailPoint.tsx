@@ -3,14 +3,15 @@ import { ChevronLeft, ChevronRight, Pencil, Plus, TriangleAlert } from 'lucide-r
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { EtatPoint } from '../domain/types';
-import { ETAT_POINT, PHASE_CONTROLE, RESPONSABLE, TYPE_CONTROLE, bloquantNonValide } from '../domain/statuts';
+import { ETAT_POINT, PHASE_CONTROLE, RESPONSABLE, STATUT_RESERVE, TYPE_CONTROLE, bloquantNonValide, refReserve, statutAffiche } from '../domain/statuts';
 import { aujourdHui, datePoint, ecartJours, fmtDate } from '../domain/dates';
 import { estValide, lireParcours } from '../domain/checklist';
-import { BadgeBloquant, Header, toast } from '../components/ui';
+import { BadgeBloquant, Header, Pastille, toast } from '../components/ui';
 import { BandeauPhotos } from '../components/Photos';
 import { enregistrerPhotos } from '../services/photos';
-import { remplacer, retour } from '../router';
+import { aller, remplacer, retour } from '../router';
 import { EditionPoint } from './EditionPoint';
+import { SaisieReserve } from './SaisieReserve';
 
 const ORDRE_ETATS: { v: EtatPoint; large?: boolean }[] = [
   { v: 'conforme', large: true }, { v: 'non_conforme', large: true },
@@ -26,9 +27,11 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
     ]);
     if (!p || !ch || p.chantierId !== chantierId) return null;
     const groupe = await db.points.where('[chantierId+lot]').equals([chantierId, p.lot]).filter((x) => x.phase === p.phase).sortBy('ordre');
-    return { p, ch, lots, rang: groupe.findIndex((x) => x.uid === uid) + 1, taille: groupe.length };
+    const reserves = await db.reserves.where('chantierId').equals(chantierId).filter((r) => r.pointId === p.id).sortBy('numero');
+    return { p, ch, lots, reserves, rang: groupe.findIndex((x) => x.uid === uid) + 1, taille: groupe.length };
   }, [chantierId, uid]);
   const [edition, setEdition] = useState(false);
+  const [saisie, setSaisie] = useState(false);
   const [photosEnCours, setPhotosEnCours] = useState(false);
   const retourChecklist = () => retour('chantier', chantierId, 'checklist');
 
@@ -40,7 +43,7 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
       </main>
     );
   }
-  const { p, ch, lots, rang, taille } = data;
+  const { p, ch, lots, reserves, rang, taille } = data;
   const parcours = lireParcours(chantierId) ?? [];
   const i = parcours.indexOf(uid);
   const prec = i > 0 ? parcours[i - 1] : undefined;
@@ -142,6 +145,29 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
         <BandeauPhotos ids={p.photoIds} onAjout={ajouterPhotos} onSupprimer={supprimerPhoto} enCours={photosEnCours} />
       </div>
 
+      {reserves.length > 0 && (
+        <div className="pad" style={{ marginTop: 14 }}>
+          <div className="lbl" style={{ marginBottom: 6 }}>Réserves liées</div>
+          <div className="card flush">
+            {reserves.map((r, i) => {
+              const s = STATUT_RESERVE[statutAffiche(r)];
+              return (
+                <button key={r.id} type="button" className="row tap" onClick={() => aller('chantier', chantierId, 'reserve', r.id!)}
+                  style={{ width: '100%', minHeight: 56, border: 0, background: 'transparent', padding: '6px 14px', borderTop: i ? '1px solid var(--line)' : 0, justifyContent: 'space-between', textAlign: 'left' }}>
+                  <span style={{ minWidth: 0 }}><span className="mono ink2">{refReserve(r.numero)}</span> <span className="ellipsis">{r.description}</span></span>
+                  <Pastille ton={s.ton}>{s.libelle}</Pastille>
+                </button>
+              );
+            })}
+          </div>
+          {p.etat !== 'non_conforme' && (
+            <button type="button" className="btn sec block tap" style={{ marginTop: 8 }} onClick={() => setSaisie(true)}>
+              <Plus size={22} strokeWidth={2.4} aria-hidden />Créer une autre réserve
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="bar-space" />
       <div className="bottom-bar">
         <button type="button" className="btn sec tap" aria-label="Point précédent" disabled={prec === undefined}
@@ -149,7 +175,7 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
           <ChevronLeft size={26} strokeWidth={2.4} aria-hidden />
         </button>
         {p.etat === 'non_conforme' ? (
-          <button type="button" className="btn block tap" onClick={() => toast('Création de réserve : disponible à l’étape (c)')}>
+          <button type="button" className="btn block tap" onClick={() => setSaisie(true)}>
             <Plus size={22} strokeWidth={2.6} aria-hidden />Créer une réserve
           </button>
         ) : (
@@ -166,6 +192,10 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
         )}
       </div>
 
+      {saisie && (
+        <SaisieReserve chantierId={chantierId} onClose={() => setSaisie(false)}
+          pre={{ lotCode: p.lot, origine: 'controle', pointId: p.id, description: `${p.intitule}${p.commentaire ? ` : ${p.commentaire}` : ''}` }} />
+      )}
       {edition && <EditionPoint chantierId={chantierId} point={p} lots={lots.map((l) => l.code)} onClose={() => setEdition(false)} />}
     </main>
   );

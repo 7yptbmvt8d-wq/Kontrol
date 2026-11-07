@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, ImageOff, Trash2, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, ImageOff, Trash2, X } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { fmtCourt, fmtHeure } from '../domain/dates';
 import { toast } from './ui';
 
 /** URL d'objet d'une photo (vignette ou pleine taille), révoquée au démontage. */
-function usePhotoUrl(id: number, pleine = false): string | null | undefined {
+export function usePhotoUrl(id: number, pleine = false): string | null | undefined {
   const photo = useLive(`photo:${id}:${pleine ? 'p' : 'v'}`, () => db.photos.get(id).then((p) => p ?? null), [id]);
   const [url, setUrl] = useState<string | null | undefined>(undefined);
   useEffect(() => {
@@ -47,34 +47,60 @@ export function BandeauPhotos({ ids, onAjout, onSupprimer, enCours }: {
       <button type="button" className="photo-add tap" aria-label="Prendre une photo" onClick={() => input.current?.click()} disabled={enCours}>
         {enCours ? <span className="spinner" aria-hidden /> : <Camera size={26} strokeWidth={2.2} aria-hidden />}
       </button>
-      {vue !== null && <Visionneuse id={vue} onClose={() => setVue(null)} onSupprimer={() => { onSupprimer(vue); setVue(null); }} />}
+      {vue !== null && <Visionneuse ids={ids} depart={Math.max(0, ids.indexOf(vue))} onClose={() => setVue(null)} onSupprimer={onSupprimer} />}
     </div>
   );
 }
 
-export function Visionneuse({ id, onClose, onSupprimer }: { id: number; onClose: () => void; onSupprimer?: () => void }) {
+export function Visionneuse({ ids, depart = 0, titre, onClose, onSupprimer }: {
+  ids: number[]; depart?: number; titre?: string; onClose: () => void; onSupprimer?: (id: number) => void;
+}) {
+  const [i, setI] = useState(Math.min(depart, ids.length - 1));
+  const id = ids[i];
   const url = usePhotoUrl(id, true);
   const photo = useLive(`photo-meta:${id}`, () => db.photos.get(id).then((p) => (p ? { prisLe: p.prisLe } : null)), [id]);
+  const fermer = useRef(onClose);
+  fermer.current = onClose;
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') fermer.current(); };
     window.addEventListener('keydown', esc);
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', esc); };
-  }, [onClose]);
+  }, []);
+  // Balayage horizontal pour changer de photo
+  const depX = useRef<number | null>(null);
   return (
-    <div className="viewer" role="dialog" aria-modal="true" aria-label="Photo">
+    <div className="viewer" role="dialog" aria-modal="true" aria-label={titre ?? 'Photo'}>
       <div className="viewer-bar">
         <button type="button" className="icon-btn round tap" aria-label="Fermer la photo" onClick={onClose}><X size={22} strokeWidth={2.4} aria-hidden /></button>
-        {photo && <span className="mono viewer-date">{fmtCourt(photo.prisLe.slice(0, 10))} · {fmtHeure(photo.prisLe)}</span>}
+        <span className="mono viewer-date">
+          {titre ? `${titre} · ` : ''}{ids.length > 1 ? `${i + 1}/${ids.length} · ` : ''}{photo ? `${fmtCourt(photo.prisLe.slice(0, 10))} ${fmtHeure(photo.prisLe)}` : ''}
+        </span>
         {onSupprimer ? (
           <button type="button" className="icon-btn round tap" aria-label="Supprimer la photo"
-            onClick={() => { if (confirm('Supprimer cette photo ?')) { onSupprimer(); toast('Photo supprimée'); } }}>
+            onClick={() => { if (confirm('Supprimer cette photo ?')) { onSupprimer(id); toast('Photo supprimée'); if (ids.length <= 1) onClose(); else setI((x) => Math.max(0, Math.min(x, ids.length - 2))); } }}>
             <Trash2 size={22} strokeWidth={2.2} aria-hidden />
           </button>
         ) : <span style={{ width: 48 }} />}
       </div>
-      <div className="viewer-img" onClick={onClose}>{url && <img src={url} alt="" />}</div>
+      <div className="viewer-img"
+        onTouchStart={(e) => { depX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (depX.current === null) return;
+          const dx = e.changedTouches[0].clientX - depX.current;
+          depX.current = null;
+          if (dx < -50 && i < ids.length - 1) setI(i + 1);
+          else if (dx > 50 && i > 0) setI(i - 1);
+        }}>
+        {url && <img src={url} alt="" />}
+      </div>
+      {ids.length > 1 && (
+        <div className="viewer-nav">
+          <button type="button" className="icon-btn round tap" aria-label="Photo précédente" disabled={i === 0} onClick={() => setI(i - 1)}><ChevronLeft size={26} aria-hidden /></button>
+          <button type="button" className="icon-btn round tap" aria-label="Photo suivante" disabled={i === ids.length - 1} onClick={() => setI(i + 1)}><ChevronRight size={26} aria-hidden /></button>
+        </div>
+      )}
     </div>
   );
 }
