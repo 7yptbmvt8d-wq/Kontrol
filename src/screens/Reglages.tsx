@@ -4,7 +4,7 @@ import type JSZip from 'jszip';
 import type { Contenu, Resume } from '../services/sauvegarde';
 import { fmtDate, fmtHeure } from '../domain/dates';
 import { Header, Segment, Sheet, toast } from '../components/ui';
-import { nouvelleVersionDisponible, rafraichir, versionChargee } from '../pwa/miseAJour';
+import { nouvelleVersionDisponible, rafraichir } from '../pwa/miseAJour';
 import { getReglage, setReglage } from '../db/schema';
 import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
@@ -69,7 +69,10 @@ export function Reglages() {
         </section>
         <section className="card stack" style={{ gap: 10 }}>
           <h2 className="sec-title">Version</h2>
-          <div className="mono ink2" style={{ overflowWrap: 'anywhere' }}>v{__APP_VERSION__} · {versionChargee()?.replace(/^assets\/index-|\.js$/g, '') ?? 'dév.'}</div>
+          <dl className="card flush">
+            <div className="kv"><dt>Version</dt><dd className="mono">{__APP_VERSION__} · build {__APP_BUILD__}</dd></div>
+            <div className="kv"><dt>Mise en ligne</dt><dd className="mono">{__APP_DATE__}</dd></div>
+          </dl>
           <button type="button" className="btn sec block tap" disabled={verif} onClick={async () => {
             setVerif(true);
             const dispo = await nouvelleVersionDisponible();

@@ -136,6 +136,11 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 Réserves pointées sur plan, PGC SPS, rapport du contrôleur technique, prix/DPGF, multi-utilisateur,
 messagerie avec les entreprises.
 
+## Version
+`package.json` : 0.<n° d'étape terminée>.x jusqu'à la V1 complète (1.0.0 après l'étape f) — **à incrémenter à chaque
+étape ou correction notable**. Numéro de build (= nombre de commits) et date de mise en ligne (heure de Paris)
+ajoutés automatiquement au build et affichés dans Réglages › Version.
+
 ## Commandes
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
