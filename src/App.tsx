@@ -31,7 +31,7 @@ export function App() {
   } else if (a === 'chantier' && b && /^\d+$/.test(b) && c === 'exports') {
     ecran = <Exports key={b} chantierId={Number(b)} />;
   } else if (a === 'chantier' && b && /^\d+$/.test(b)) {
-    const onglet = ONGLETS.some((o) => o.v === c) ? (c as Onglet) : 'checklist';
+    const onglet = ONGLETS.some((o) => o.v === c) || c === 'penalites' ? (c as Onglet) : 'checklist';
     ecran = <Chantier key={b} id={Number(b)} onglet={onglet} />;
   } else ecran = <Accueil />;
   return (

@@ -6,13 +6,14 @@ import { Header } from '../components/ui';
 import { pourcentage, statistiques } from '../domain/checklist';
 import { aller, lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
+import { OngletPenalites } from './OngletPenalites';
 import { OngletChecklist } from './OngletChecklist';
 import { OngletReserves } from './OngletReserves';
 import { SaisieReserve } from './SaisieReserve';
 import { OngletIntervenants } from './OngletIntervenants';
 import { ParametresChantier } from './ParametresChantier';
 
-export type Onglet = 'checklist' | 'reserves' | 'jalons' | 'intervenants';
+export type Onglet = 'checklist' | 'reserves' | 'jalons' | 'penalites' | 'intervenants';
 export const ONGLETS: { v: Onglet; l: string }[] = [
   { v: 'checklist', l: 'Checklist' },
   { v: 'reserves', l: 'Réserves' },
@@ -26,6 +27,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
     const pts = await db.points.where('chantierId').equals(id).toArray();
     return pourcentage(statistiques(pts));
   }, [id]);
+  const nbPenalites = useLive(`nbPenalites:${id}`, () => db.penalitesAppliquees.where('chantierId').equals(id).count(), [id]);
   const [params, setParams] = useState(false);
   const [saisie, setSaisie] = useState(false);
 
@@ -62,7 +64,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
       />
       <nav className="tabs" aria-label="Sections du chantier">
         {ONGLETS.map((o) => (
-          <a key={o.v} className="tab tap" href={lien('chantier', id, o.v)} aria-current={onglet === o.v ? 'page' : undefined}
+          <a key={o.v} className="tab tap" href={lien('chantier', id, o.v)} aria-current={onglet === o.v || (o.v === 'jalons' && onglet === 'penalites') ? 'page' : undefined}
             onClick={(e) => { e.preventDefault(); remplacer('chantier', id, o.v); }}>
             {o.l}
           </a>
@@ -71,10 +73,21 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
 
       {onglet === 'checklist' && <OngletChecklist chantier={ch} />}
       {onglet === 'reserves' && <OngletReserves chantier={ch} />}
+      {(onglet === 'jalons' || onglet === 'penalites') && (
+        <div className="pad" style={{ marginTop: 12 }}>
+          <div className="seg pill" role="group" aria-label="Jalons ou pénalités">
+            <button type="button" className="tap" aria-pressed={onglet === 'jalons'} onClick={() => remplacer('chantier', id, 'jalons')}>Jalons</button>
+            <button type="button" className="tap" aria-pressed={onglet === 'penalites'} onClick={() => remplacer('chantier', id, 'penalites')}>
+              Pénalités{nbPenalites ? <span className="mono" style={{ marginLeft: 6 }}>{nbPenalites}</span> : null}
+            </button>
+          </div>
+        </div>
+      )}
       {onglet === 'jalons' && <OngletJalons chantier={ch} onParams={() => setParams(true)} />}
+      {onglet === 'penalites' && <OngletPenalites chantier={ch} />}
       {onglet === 'intervenants' && <OngletIntervenants chantierId={id} />}
 
-      {onglet !== 'intervenants' && (
+      {onglet !== 'intervenants' && onglet !== 'penalites' && (
         <>
           <div style={{ height: 96 }} aria-hidden />
           <button type="button" className="fab tap" aria-label="Nouvelle réserve" onClick={() => setSaisie(true)}>

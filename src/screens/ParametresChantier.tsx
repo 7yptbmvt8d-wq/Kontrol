@@ -100,6 +100,12 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
               <input id={`m-num-${i}`} className="mono" value={l.numeroMarche} placeholder="à renseigner" onChange={(e) => setLot(i, { numeroMarche: e.target.value })} />
             </div>
             <div className="frow">
+              <label className="rl" htmlFor={`m-mt-${i}`}>Montant HT (€)</label>
+              <input id={`m-mt-${i}`} className="mono" inputMode="numeric" placeholder="pour les pénalités en taux"
+                value={l.montantHT ? l.montantHT.toLocaleString('fr-FR').replace(/\u202F/g, ' ') : ''}
+                onChange={(e) => { const n = Number(e.target.value.replace(/[^\d]/g, '')); setLot(i, { montantHT: n || undefined }); }} />
+            </div>
+            <div className="frow">
               <label className="rl" htmlFor={`m-os-${i}`}>OS du lot</label>
               <input id={`m-os-${i}`} type="date" className="mono" value={l.dateOS ?? ''} onChange={(e) => setLot(i, { dateOS: e.target.value })} />
             </div>

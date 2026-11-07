@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
-  Chantier, Lot, Intervenant, PointControle, Reserve, Jalon, Penalite, Photo, Reglage,
+  Chantier, Lot, Intervenant, PointControle, Reserve, Jalon, Penalite, PenaliteAppliquee, Photo, Reglage,
 } from '../domain/types';
 
 export class KontrolDB extends Dexie {
@@ -11,6 +11,7 @@ export class KontrolDB extends Dexie {
   reserves!: EntityTable<Reserve, 'id'>;
   jalons!: EntityTable<Jalon, 'uid'>;
   penalites!: EntityTable<Penalite, 'id'>;
+  penalitesAppliquees!: EntityTable<PenaliteAppliquee, 'id'>;
   photos!: EntityTable<Photo, 'id'>;
   reglages!: EntityTable<Reglage, 'cle'>;
 
@@ -38,6 +39,8 @@ export class KontrolDB extends Dexie {
         await tx.table('chantiers').update(c.id, { numeroMarche: undefined });
       }
     });
+    // v3 : registre des pénalités appliquées (distinct du barème du CCAP)
+    this.version(3).stores({ penalitesAppliquees: '++id, chantierId, [chantierId+lotCode]' });
   }
 }
 
@@ -54,8 +57,8 @@ export async function setReglage(cle: string, valeur: unknown): Promise<void> {
 
 /** Supprime un chantier et toutes ses données. */
 export async function supprimerChantier(chantierId: number): Promise<void> {
-  await db.transaction('rw', [db.chantiers, db.lots, db.intervenants, db.points, db.reserves, db.jalons, db.penalites, db.photos], async () => {
-    for (const t of [db.lots, db.intervenants, db.points, db.reserves, db.jalons, db.penalites, db.photos]) {
+  await db.transaction('rw', [db.chantiers, db.lots, db.intervenants, db.points, db.reserves, db.jalons, db.penalites, db.penalitesAppliquees, db.photos], async () => {
+    for (const t of [db.lots, db.intervenants, db.points, db.reserves, db.jalons, db.penalites, db.penalitesAppliquees, db.photos]) {
       await t.where('chantierId').equals(chantierId).delete();
     }
     await db.chantiers.delete(chantierId);

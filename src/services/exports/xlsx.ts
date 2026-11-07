@@ -4,6 +4,7 @@ import type { Reserve } from '../../domain/types';
 import { aujourdHui, datePoint, ecartJours } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CONTROLE, RESPONSABLE, TYPE_CONTROLE, refReserve, statutAffiche, STATUT_RESERVE } from '../../domain/statuts';
 import { derniereAction, lignesJalons, origineTexte, parEntreprise, type DonneesChantier } from './donnees';
+import { STATUT_PENALITE } from '../../domain/penalites';
 import { TYPES, type FichierPret } from './partage';
 
 type Cellule = string | number | Date | undefined;
@@ -126,5 +127,32 @@ export function xlsxNonSoldes(d: DonneesChantier, nom: string): FichierPret {
   XLSX.utils.book_append_sheet(wb, feuille(pts, [7, 12, 50, 12, 13, 9, 13, 14, 9, 14, 45, 22, 40]), 'Points non soldés');
   const res = d.reserves.filter((r) => r.statut !== 'leve');
   XLSX.utils.book_append_sheet(wb, feuille(lignesReserves(d, res, ref), LARG_RESERVES), 'Réserves non levées');
+  return { nom, blob: blob(wb) };
+}
+
+/** Registre des pénalités appliquées : synthèse par marché, détail, barème du CCAP. */
+export function xlsxPenalites(d: DonneesChantier, nom: string): FichierPret {
+  const wb = XLSX.utils.book_new();
+  const synthese = d.lots.map((l) => {
+    const ps = d.appliquees.filter((p) => p.lotCode === l.code);
+    const total = ps.reduce((t, p) => t + p.montant, 0);
+    return {
+      Marché: l.code, 'N° marché': l.numeroMarche, 'Montant marché (€ HT)': l.montantHT,
+      Pénalités: ps.length, 'Total (€ HT)': total,
+      'Constatées (€ HT)': ps.filter((p) => p.statut === 'constatee').reduce((t, p) => t + p.montant, 0),
+      'Notifiées (€ HT)': ps.filter((p) => p.statut === 'notifiee').reduce((t, p) => t + p.montant, 0),
+      'Retenues (€ HT)': ps.filter((p) => p.statut === 'retenue').reduce((t, p) => t + p.montant, 0),
+      '% du marché': l.montantHT ? Math.round((total / l.montantHT) * 10000) / 100 : undefined,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, feuille(synthese, [8, 16, 18, 11, 13, 16, 15, 15, 11]), 'Synthèse');
+  const detail = d.appliquees.map((p) => ({
+    Date: dateXl(p.date), Marché: p.lotCode, Entreprise: p.entreprise, Motif: p.motif, 'Article CCAP': p.articleCcap,
+    Quantité: p.quantite, Unité: p.unite, 'Montant unitaire (€ HT)': p.montantUnitaire, 'Montant (€ HT)': p.montant,
+    Statut: STATUT_PENALITE[p.statut].libelle, 'Notifiée le': dateXl(p.dateNotification), Note: p.note,
+  }));
+  XLSX.utils.book_append_sheet(wb, feuille(detail, [11, 8, 30, 50, 12, 9, 11, 14, 13, 18, 11, 40]), 'Pénalités appliquées');
+  const bareme = d.penalites.map((p) => ({ Marché: p.lotCode ?? 'Commun', Motif: p.motif, 'Montant ou taux': p.montantOuTaux, 'Article CCAP': p.articleCcap }));
+  XLSX.utils.book_append_sheet(wb, feuille(bareme, [10, 60, 40, 16]), 'Barème CCAP');
   return { nom, blob: blob(wb) };
 }

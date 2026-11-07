@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CalendarClock, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
-import type { CategorieJalon, Chantier, Jalon, Penalite, RefJalon } from '../domain/types';
+import type { CategorieJalon, Chantier, Jalon, RefJalon } from '../domain/types';
 import { aujourdHui, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 
@@ -22,20 +22,18 @@ const TOUS = '';
 export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; onParams: () => void }) {
   const id = ch.id!;
   const data = useLive(`jalons:${id}`, async () => {
-    const [jalons, lots, penalites] = await Promise.all([
+    const [jalons, lots] = await Promise.all([
       db.jalons.where('chantierId').equals(id).sortBy('ordre'),
       db.lots.where('chantierId').equals(id).sortBy('ordre'),
-      db.penalites.where('chantierId').equals(id).toArray(),
     ]);
-    return { jalons, lots, penalites };
+    return { jalons, lots };
   }, [id]);
   const [filtre, setFiltreEtat] = useState(filtres.get(id) ?? TOUS);
   const setFiltre = (f: string) => { filtres.set(id, f); setFiltreEtat(f); };
   const [edition, setEdition] = useState<{ j?: Jalon } | null>(null);
-  const [penalite, setPenalite] = useState<{ p?: Penalite } | null>(null);
 
   if (!data) return null;
-  const { jalons, lots, penalites } = data;
+  const { jalons, lots } = data;
   const today = aujourdHui();
   const lotFiltre = lots.find((l) => l.code === filtre);
   const ctxCarte = contexte(ch, lots, jalons, lotFiltre?.code);
@@ -50,7 +48,6 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
     })
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || a.j.ordre - b.j.ordre);
 
-  const pens = penalites.filter((p) => !lotFiltre || !p.lotCode || p.lotCode === lotFiltre.code);
   const nbLot = (code: string) => jalons.filter((j) => !j.lotCode || j.lotCode === code).length;
 
   return (
@@ -110,29 +107,12 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
           <Plus size={22} strokeWidth={2.4} aria-hidden />Ajouter un jalon
         </button>
 
-        <h2 className="sec-title" style={{ margin: '20px 0 8px' }}>Pénalités</h2>
-        {pens.length > 0 && (
-          <section className="card flush">
-            {pens.map((p, i) => (
-              <button key={p.id} type="button" className="tap" onClick={() => setPenalite({ p })}
-                style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'transparent', padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
-                <div style={{ fontWeight: 600 }}>{p.lotCode && <><CodeLot code={p.lotCode} />{' '}</>}{p.motif}</div>
-                <div>{p.montantOuTaux}</div>
-                {p.articleCcap && <div className="mono ink2">{p.articleCcap}</div>}
-              </button>
-            ))}
-          </section>
-        )}
-        <button type="button" className="btn sec block tap" style={{ marginTop: 8 }} onClick={() => setPenalite({})}>
-          <Plus size={22} strokeWidth={2.4} aria-hidden />Ajouter une pénalité
-        </button>
       </div>
 
       {edition && (
         <EditionJalon j={edition.j} chantierId={id} lots={lots.map((l) => l.code)} onClose={() => setEdition(null)}
           calculer={(x) => { const ctx = ctxDe(x); return { ctx, date: dateJalon(x, ctx) }; }} />
       )}
-      {penalite && <EditionPenalite p={penalite.p} chantierId={id} lots={lots.map((l) => l.code)} onClose={() => setPenalite(null)} />}
     </div>
   );
 }
@@ -299,57 +279,6 @@ function EditionJalon({ j, chantierId, lots, calculer, onClose }: {
         {v.categorie === 'delai' && (
           <div className="ink2">Un jalon « Délai » rapporté à l’OS fixe la fin du délai d’exécution et la réception prévisionnelle.</div>
         )}
-      </div>
-    </Sheet>
-  );
-}
-
-function EditionPenalite({ p, chantierId, lots, onClose }: { p?: Penalite; chantierId: number; lots: string[]; onClose: () => void }) {
-  const [v, setV] = useState<Penalite>(p ?? { chantierId, motif: '', montantOuTaux: '', articleCcap: '' });
-  const set = <K extends keyof Penalite>(k: K, val: Penalite[K]) => setV((o) => ({ ...o, [k]: val }));
-  const enregistrer = async () => {
-    if (!v.motif.trim()) { toast('Motif obligatoire'); return; }
-    await db.penalites.put({ ...v, motif: v.motif.trim(), montantOuTaux: v.montantOuTaux.trim(), articleCcap: v.articleCcap.trim(), lotCode: v.lotCode || undefined });
-    toast(p ? 'Pénalité modifiée' : 'Pénalité ajoutée');
-    onClose();
-  };
-  const supprimer = async () => {
-    if (!p || !confirm('Supprimer cette pénalité ?')) return;
-    await db.penalites.delete(p.id!);
-    onClose();
-  };
-  return (
-    <Sheet titre={p ? 'Pénalité' : 'Nouvelle pénalité'} onClose={onClose} auto
-      pied={
-        <div className="row">
-          {p && <button type="button" className="btn danger tap" aria-label="Supprimer la pénalité" onClick={supprimer}><Trash2 size={22} aria-hidden /></button>}
-          <button type="button" className="btn block tap" onClick={enregistrer}>Enregistrer</button>
-        </div>
-      }>
-      <div className="stack" style={{ gap: 14 }}>
-        <div className="field">
-          <label htmlFor="pe-motif">Motif</label>
-          <textarea id="pe-motif" className="textarea" style={{ minHeight: 64 }} value={v.motif} onChange={(e) => set('motif', e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="pe-mt">Montant ou taux</label>
-          <input id="pe-mt" className="input" value={v.montantOuTaux} onChange={(e) => set('montantOuTaux', e.target.value)} />
-        </div>
-        <div>
-          {lots.length > 1 && (
-            <div className="frow">
-              <label className="rl" htmlFor="pe-lot">Marché</label>
-              <select id="pe-lot" value={v.lotCode ?? ''} onChange={(e) => set('lotCode', e.target.value || undefined)}>
-                <option value="">Commun à tous</option>
-                {lots.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-          )}
-          <div className="frow" style={{ borderBottom: 0 }}>
-            <label className="rl" htmlFor="pe-art">Article CCAP</label>
-            <input id="pe-art" className="mono" value={v.articleCcap} onChange={(e) => set('articleCcap', e.target.value)} />
-          </div>
-        </div>
       </div>
     </Sheet>
   );

@@ -1,16 +1,16 @@
 // Chargement de toutes les données d'un chantier pour les exports, et valeurs calculées communes.
 import { db } from '../../db/schema';
-import type { Chantier, Intervenant, Jalon, Lot, Penalite, PointControle, Reserve } from '../../domain/types';
+import type { Chantier, Intervenant, Jalon, Lot, Penalite, PenaliteAppliquee, PointControle, Reserve } from '../../domain/types';
 import { aujourdHui, contexte, dateJalon, ecartJours, fmtDate, statutJalon } from '../../domain/dates';
 import { GRAVITE, ORIGINE, STATUT_RESERVE, refReserve, statutAffiche } from '../../domain/statuts';
 
 export interface DonneesChantier {
   ch: Chantier; lots: Lot[]; intervenants: Intervenant[]; points: PointControle[];
-  reserves: Reserve[]; jalons: Jalon[]; penalites: Penalite[];
+  reserves: Reserve[]; jalons: Jalon[]; penalites: Penalite[]; appliquees: PenaliteAppliquee[];
 }
 
 export async function chargerChantier(id: number): Promise<DonneesChantier> {
-  const [ch, lots, intervenants, points, reserves, jalons, penalites] = await Promise.all([
+  const [ch, lots, intervenants, points, reserves, jalons, penalites, appliquees] = await Promise.all([
     db.chantiers.get(id),
     db.lots.where('chantierId').equals(id).sortBy('ordre'),
     db.intervenants.where('chantierId').equals(id).toArray(),
@@ -18,9 +18,10 @@ export async function chargerChantier(id: number): Promise<DonneesChantier> {
     db.reserves.where('chantierId').equals(id).sortBy('numero'),
     db.jalons.where('chantierId').equals(id).sortBy('ordre'),
     db.penalites.where('chantierId').equals(id).toArray(),
+    db.penalitesAppliquees.where('chantierId').equals(id).sortBy('date'),
   ]);
   if (!ch) throw new Error('Chantier introuvable');
-  return { ch, lots, intervenants, points, reserves, jalons, penalites };
+  return { ch, lots, intervenants, points, reserves, jalons, penalites, appliquees };
 }
 
 /** Libellé de statut d'une réserve pour les documents (avec retard). */

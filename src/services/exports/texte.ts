@@ -4,6 +4,7 @@ import { aujourdHui, datePoint, ecartJours, fmtDate, fmtHeure } from '../../doma
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, RESPONSABLE, TYPE_CONTROLE, bloquantNonValide, refReserve } from '../../domain/statuts';
 import { pourcentage, statistiques } from '../../domain/checklist';
 import type { PointControle } from '../../domain/types';
+import { STATUT_PENALITE, euros, pluriel } from '../../domain/penalites';
 import { derniereAction, lignesJalons, origineTexte, parEntreprise, statutTexte, type DonneesChantier } from './donnees';
 
 const HORIZON = 15; // jours : points « à faire » dont l'échéance approche
@@ -84,6 +85,19 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
   titre(`6. JALONS EN RETARD OU DANS LES 30 JOURS (${jal.length})`);
   if (!jal.length) L.push('Aucun.');
   for (const x of jal) L.push(`- ${fmtDate(x.date)} · ${x.j.lotCode ? `[${x.j.lotCode}] ` : ''}${x.j.intitule} · ${x.statut}${x.j.articleCcap ? ` · CCAP ${x.j.articleCcap}` : ''}`);
+
+  const pens = d.appliquees;
+  const totalPen = pens.reduce((t, p) => t + p.montant, 0);
+  titre(`7. PÉNALITÉS APPLIQUÉES (${pens.length}${pens.length ? ` · ${euros(totalPen)}` : ''})`);
+  if (!pens.length) L.push('Aucune.');
+  for (const l of lots) {
+    const duLot = pens.filter((p) => p.lotCode === l.code);
+    if (!duLot.length) continue;
+    L.push(`${l.code} · marché ${l.numeroMarche || 'n° non renseigné'} — ${euros(duLot.reduce((t, p) => t + p.montant, 0))}${l.montantHT ? ` (${((duLot.reduce((t, p) => t + p.montant, 0) / l.montantHT) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} % du marché)` : ''}`);
+    for (const p of duLot) {
+      L.push(`- ${fmtDate(p.date)} · ${p.motif}${p.articleCcap ? ` (CCAP ${p.articleCcap})` : ''} · ${pluriel(p.quantite, p.unite)}${p.montantUnitaire !== undefined ? ` × ${euros(p.montantUnitaire)}` : ''} = ${euros(p.montant)} · ${STATUT_PENALITE[p.statut].libelle}${p.note ? ` · ${p.note}` : ''}`);
+    }
+  }
 
   return L.join('\n') + '\n';
 }

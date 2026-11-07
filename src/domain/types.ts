@@ -40,6 +40,7 @@ export interface Lot {
   code: string;
   intitule: string;
   numeroMarche: string;
+  montantHT?: number; // montant du marché (€ HT) : pénalités en taux (1/1000…) et plafond
   dateOS?: string; // vide = OS générale du chantier
   dateReceptionReelle?: string; // vide = réception de l'ensemble (ou OS du lot + délai propre)
   ordre: number;
@@ -132,6 +133,27 @@ export interface Penalite {
   motif: string;
   montantOuTaux: string;
   articleCcap: string;
+}
+
+/** Pénalité appliquée (constatée) à un marché — distincte du barème du CCAP (`Penalite`). */
+export type StatutPenalite = 'constatee' | 'notifiee' | 'retenue';
+export interface PenaliteAppliquee {
+  id?: number;
+  chantierId: number;
+  lotCode: string;
+  entreprise: string;
+  baremeId?: number; // article du barème utilisé
+  motif: string;
+  articleCcap: string;
+  date: string; // date du constat
+  quantite: number;
+  unite: string; // « jour », « absence »…
+  montantUnitaire?: number; // € HT par unité (calculé depuis le barème, modifiable)
+  montant: number; // € HT
+  statut: StatutPenalite;
+  dateNotification?: string;
+  note: string;
+  creeLe: string;
 }
 
 export interface Photo {

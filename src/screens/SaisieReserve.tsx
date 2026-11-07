@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { CalendarDays, Camera, Trash2 } from 'lucide-react';
+import { CalendarDays, Camera, Images, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Gravite, Origine, Reserve } from '../domain/types';
 import { ORIGINE, refReserve } from '../domain/statuts';
 import { ajouterJours, aujourdHui, fmtDate, fmtHeure } from '../domain/dates';
 import { Segment, Sheet, toast } from '../components/ui';
-import { Vignette } from '../components/Photos';
+import { EntreesPhotos, Vignette } from '../components/Photos';
 import { BoutonDictee } from '../components/Dictee';
 import { enregistrerPhotos } from '../services/photos';
 import { creerReserve, lireMemoire, modifier, supprimer } from '../services/reserves';
@@ -43,6 +43,7 @@ export function SaisieReserve({ chantierId, reserve, pre, onClose, onCree }: {
   const nouvellesPhotos = useRef<number[]>([]); // supprimées si on ferme sans enregistrer
   const enregistre = useRef(false);
   const input = useRef<HTMLInputElement>(null);
+  const phototheque = useRef<HTMLInputElement>(null);
   const description = useRef<HTMLTextAreaElement>(null);
 
   const entreprisesDuLot = (lot: string) => {
@@ -150,12 +151,16 @@ export function SaisieReserve({ chantierId, reserve, pre, onClose, onCree }: {
             <button type="button" className="saisie-photo-x tap" aria-label={`Retirer la photo ${i + 1}`} onClick={() => retirerPhoto(id)}>×</button>
           </div>
         ))}
-        <input ref={input} type="file" accept="image/*" capture="environment" multiple className="sr-only" tabIndex={-1} aria-hidden
-          onChange={(e) => { const f = [...(e.target.files ?? [])]; e.target.value = ''; if (f.length) void ajouterPhotos(f); }} />
-        <button type="button" className="saisie-photo-add tap" onClick={() => input.current?.click()} disabled={photosEnCours}
-          style={{ gridColumn: (v.photoIds?.length ?? 0) % 3 === 0 ? 'span 3' : (v.photoIds?.length ?? 0) % 3 === 1 ? 'span 2' : 'span 1' }}>
+      </div>
+      <EntreesPhotos camera={input} phototheque={phototheque} onAjout={(f) => void ajouterPhotos(f)} />
+      <div className="saisie-photo-actions" style={{ marginTop: v.photoIds?.length ? 8 : 0 }}>
+        <button type="button" className="saisie-photo-add tap" style={{ flex: '2 1 0' }} onClick={() => input.current?.click()} disabled={photosEnCours}>
           <span className="saisie-photo-ico">{photosEnCours ? <span className="spinner" aria-hidden /> : <Camera size={24} strokeWidth={2.2} aria-hidden />}</span>
-          {(v.photoIds?.length ?? 0) % 3 !== 2 && (v.photoIds?.length ? 'Ajouter une photo' : 'Prendre une photo')}
+          {v.photoIds?.length ? 'Autre photo' : 'Prendre une photo'}
+        </button>
+        <button type="button" className="saisie-photo-add sec tap" style={{ flex: '1 1 0' }} onClick={() => phototheque.current?.click()} disabled={photosEnCours}>
+          <span className="saisie-photo-ico sec"><Images size={24} strokeWidth={2.2} aria-hidden /></span>
+          Photothèque
         </button>
       </div>
 

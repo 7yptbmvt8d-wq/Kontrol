@@ -5,16 +5,20 @@ import { useLive } from '../db/live';
 import type { Intervenant, RoleIntervenant } from '../domain/types';
 import { ROLE_INTERVENANT } from '../domain/statuts';
 import { CodeLot, Sheet, toast } from '../components/ui';
+import { euros, totauxParMarche } from '../domain/penalites';
+import { filtrerPenalitesSur } from './OngletPenalites';
+import { aller } from '../router';
 
 const ORDRE_ROLE: RoleIntervenant[] = ['titulaire', 'sous_traitant', 'moa', 'controleur_technique', 'csps', 'autre'];
 
 export function OngletIntervenants({ chantierId }: { chantierId: number }) {
   const data = useLive(`intervenants:${chantierId}`, async () => {
-    const [lots, inter] = await Promise.all([
+    const [lots, inter, pens] = await Promise.all([
       db.lots.where('chantierId').equals(chantierId).sortBy('ordre'),
       db.intervenants.where('chantierId').equals(chantierId).toArray(),
+      db.penalitesAppliquees.where('chantierId').equals(chantierId).toArray(),
     ]);
-    return { lots, inter };
+    return { lots, inter, penalites: totauxParMarche(pens) };
   }, [chantierId]);
   const [edition, setEdition] = useState<Intervenant | null>(null);
 
@@ -38,6 +42,12 @@ export function OngletIntervenants({ chantierId }: { chantierId: number }) {
                 <span className="sec-title">{g.titre}</span>
               </div>
               {g.code && <div className="ink2">Marché <span className="mono" style={{ overflowWrap: 'anywhere' }}>{g.marche || 'n° non renseigné'}</span></div>}
+              {g.code && (data.penalites.get(g.code)?.nombre ?? 0) > 0 && (
+                <button type="button" className="tap c-r" style={{ border: 0, background: 'none', padding: 0, minHeight: 44, fontWeight: 600, textAlign: 'left' }}
+                  onClick={() => { filtrerPenalitesSur(chantierId, g.code); aller('chantier', chantierId, 'penalites'); }}>
+                  Pénalités : {euros(data.penalites.get(g.code)!.total)} ({data.penalites.get(g.code)!.nombre}) ›
+                </button>
+              )}
             </div>
             {g.items.length === 0 && <div className="ink2" style={{ padding: '0 14px 12px' }}>Aucun intervenant.</div>}
             {g.items.map((i) => (

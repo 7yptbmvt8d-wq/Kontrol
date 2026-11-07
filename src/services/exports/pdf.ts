@@ -5,6 +5,7 @@ import type { Reserve } from '../../domain/types';
 import { aujourdHui, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
 import { GRAVITE, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
 import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier } from './donnees';
+import { STATUT_PENALITE, euros, pluriel } from '../../domain/penalites';
 import { TYPES, type FichierPret } from './partage';
 
 // Couleurs d'impression (document papier, indépendantes du thème de l'app) — reprennent les tons du mode clair.
@@ -209,6 +210,44 @@ export function pdfJalons(d: DonneesChantier, nom: string): FichierPret {
       doc.texte(`${p.montantOuTaux}${p.articleCcap ? ` · CCAP ${p.articleCcap}` : ''}`, { taille: 9, couleur: GRIS });
       doc.espace(1.5);
     }
+  }
+  return { nom, blob: doc.terminer() };
+}
+
+/** Registre des pénalités appliquées, par marché (pour notification ou décompte). */
+export function pdfPenalites(d: DonneesChantier, nom: string): FichierPret {
+  const doc = new DocPdf(`${d.ch.nom}${d.ch.site ? ` — ${d.ch.site}` : ''}`, edition());
+  doc.texte('Registre des pénalités', { taille: 16, gras: true, couleur: ACCENT });
+  const total = d.appliquees.reduce((t, p) => t + p.montant, 0);
+  doc.texte(`${d.appliquees.length} pénalité(s) · total ${euros(total)}`, { taille: 10, gras: true });
+  doc.espace(2);
+  doc.trait();
+  if (!d.appliquees.length) doc.texte('Aucune pénalité appliquée.', { couleur: GRIS });
+  for (const l of d.lots) {
+    const ps = d.appliquees.filter((p) => p.lotCode === l.code);
+    if (!ps.length) continue;
+    const t = ps.reduce((s, p) => s + p.montant, 0);
+    doc.place(24);
+    doc.texte(`${l.code} · ${l.intitule || ''}`, { taille: 12, gras: true });
+    doc.texte(`Marché ${l.numeroMarche || 'n° non renseigné'}${l.montantHT ? ` · montant ${euros(l.montantHT)}` : ''} · ${ps[0].entreprise}`, { taille: 9, couleur: GRIS });
+    doc.espace(1);
+    for (const p of ps) {
+      doc.place(14);
+      const y0 = doc.y;
+      const pdf = doc.doc;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(...ENCRE);
+      pdf.text(fmtDate(p.date), MARGE, y0 + 4);
+      pdf.text(pdfTexte(euros(p.montant)), 210 - MARGE, y0 + 4, { align: 'right' });
+      doc.y = y0;
+      doc.texte(p.motif, { x: MARGE + 24, largeur: LARGEUR - 24 - 34, gras: true, taille: 10 });
+      doc.texte(`${pluriel(p.quantite, p.unite)}${p.montantUnitaire !== undefined ? ` × ${euros(p.montantUnitaire)}` : ''}${p.articleCcap ? ` · CCAP ${p.articleCcap}` : ''} · ${STATUT_PENALITE[p.statut].libelle}${p.dateNotification && p.statut !== 'constatee' ? ` le ${fmtDate(p.dateNotification)}` : ''}`,
+        { x: MARGE + 24, largeur: LARGEUR - 24 - 34, taille: 9, couleur: GRIS });
+      if (p.note) doc.texte(p.note, { x: MARGE + 24, largeur: LARGEUR - 24 - 34, taille: 9, couleur: GRIS });
+      doc.espace(1.5);
+    }
+    doc.texte(`Total ${l.code} : ${euros(t)}${l.montantHT ? ` (${((t / l.montantHT) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} % du marché)` : ''}`, { gras: true, taille: 10.5 });
+    doc.espace(2);
+    doc.trait();
   }
   return { nom, blob: doc.terminer() };
 }

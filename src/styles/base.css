@@ -326,3 +326,11 @@ dl { margin: 0; }
   background: var(--surface2); color: var(--ink); font-family: var(--font-mono); font-size: 16px; font-weight: 600; padding: 0 12px;
   display: inline-flex; align-items: center; justify-content: center;
 }
+
+/* ---------- Pénalités ---------- */
+.radio { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--line); }
+.radio.on { border: 7px solid var(--accent); }
+
+.saisie-photo-actions { display: flex; gap: var(--gap-sm); }
+.saisie-photo-add.sec { border-style: solid; border-color: var(--line); background: var(--surface2); }
+.saisie-photo-ico.sec { background: var(--surface); color: var(--ink); }

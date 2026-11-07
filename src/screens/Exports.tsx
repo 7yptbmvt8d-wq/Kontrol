@@ -9,6 +9,7 @@ import { filtrerTrier, type FiltresReserves } from '../domain/reserves';
 import { bloquantNonValide, STATUT_RESERVE } from '../domain/statuts';
 import { filtresReserves } from './OngletReserves';
 import { retour } from '../router';
+import { euros } from '../domain/penalites';
 import { CarteDrive } from '../components/Drive';
 
 type Format = 'pdf' | 'xlsx';
@@ -55,7 +56,7 @@ export function Exports({ chantierId }: { chantierId: number }) {
     }
   };
 
-  const exporter = (quoi: 'liste' | 'entreprises' | 'jalons' | 'nonSoldes', fmt: Format) => {
+  const exporter = (quoi: 'liste' | 'entreprises' | 'jalons' | 'penalites' | 'nonSoldes', fmt: Format) => {
     const cle = `${quoi}-${fmt}`;
     const h = horodatage();
     if (quoi === 'liste') {
@@ -86,6 +87,11 @@ export function Exports({ chantierId }: { chantierId: number }) {
         ? [(await import('../services/exports/xlsx')).xlsxJalons(dd, `${nomFichier('Jalons', base, h)}.xlsx`)]
         : [(await import('../services/exports/pdf')).pdfJalons(dd, `${nomFichier('Jalons', base, h)}.pdf`)]);
     }
+    if (quoi === 'penalites') {
+      return lancer(cle, 'Registre des pénalités', async (dd) => fmt === 'xlsx'
+        ? [(await import('../services/exports/xlsx')).xlsxPenalites(dd, `${nomFichier('Penalites', base, h)}.xlsx`)]
+        : [(await import('../services/exports/pdf')).pdfPenalites(dd, `${nomFichier('Penalites', base, h)}.pdf`)]);
+    }
     return lancer(cle, 'Points non soldés', async (dd) => [(await import('../services/exports/xlsx')).xlsxNonSoldes(dd, `${nomFichier('Points-non-soldes', base, h)}.xlsx`)]);
   };
 
@@ -105,7 +111,7 @@ export function Exports({ chantierId }: { chantierId: number }) {
     return [{ nom: `Kontrol-sauvegarde-${horodatage()}.zip`, blob }];
   });
 
-  const Formats = ({ quoi, pdf = true }: { quoi: 'liste' | 'entreprises' | 'jalons' | 'nonSoldes'; pdf?: boolean }) => (
+  const Formats = ({ quoi, pdf = true }: { quoi: 'liste' | 'entreprises' | 'jalons' | 'penalites' | 'nonSoldes'; pdf?: boolean }) => (
     <>
       {pdf && <BoutonFormat libelle="PDF" cle={`${quoi}-pdf`} enCours={enCours} progres={progres} onClick={() => exporter(quoi, 'pdf')} />}
       <BoutonFormat libelle="XLSX" cle={`${quoi}-xlsx`} enCours={enCours} progres={progres} onClick={() => exporter(quoi, 'xlsx')} />
@@ -154,6 +160,14 @@ export function Exports({ chantierId }: { chantierId: number }) {
           <span>Inclure les réserves levées</span>
           <input type="checkbox" {...{ switch: '' }} className="switch" checked={levees} onChange={(e) => setLevees(e.target.checked)} />
         </label>
+
+        <div className="ex">
+          <div className="ex-txt">
+            <div className="ex-titre">Registre des pénalités</div>
+            <div className="ink2">{nb(d.appliquees.length, 'pénalité')} · {euros(d.appliquees.reduce((t, p) => t + p.montant, 0))} · par marché</div>
+          </div>
+          <Formats quoi="penalites" />
+        </div>
 
         <div className="ex">
           <div className="ex-txt">

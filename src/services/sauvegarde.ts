@@ -8,7 +8,9 @@ import type { Photo } from '../domain/types';
 export const FORMAT = 'kontrol-sauvegarde';
 export const VERSION_FORMAT = 1;
 
-const TABLES = ['chantiers', 'lots', 'intervenants', 'points', 'reserves', 'jalons', 'penalites', 'reglages'] as const;
+const TABLES = ['chantiers', 'lots', 'intervenants', 'points', 'reserves', 'jalons', 'penalites', 'penalitesAppliquees', 'reglages'] as const;
+/** Tables apparues après le format v1 : absentes des anciennes sauvegardes (vides à la restauration). */
+const TABLES_RECENTES: readonly string[] = ['penalitesAppliquees'];
 type NomTable = (typeof TABLES)[number];
 
 interface PhotoMeta { id: number; chantierId: number; prisLe: string; fichier: string; vignette: string }
@@ -58,7 +60,11 @@ export async function lireSauvegarde(fichier: Blob): Promise<{ zip: JSZip; conte
   try { contenu = JSON.parse(await f.async('string')); } catch { throw new Error('donnees.json illisible.'); }
   if (contenu.format !== FORMAT) throw new Error('Ce fichier n’est pas une sauvegarde Kontrol.');
   if (contenu.version > VERSION_FORMAT || contenu.schema > db.verno) throw new Error('Sauvegarde créée par une version plus récente de Kontrol : mettez l’app à jour.');
-  for (const t of TABLES) if (!Array.isArray(contenu.tables?.[t])) throw new Error(`Table « ${t} » absente de la sauvegarde.`);
+  for (const t of TABLES) {
+    if (Array.isArray(contenu.tables?.[t])) continue;
+    if (TABLES_RECENTES.includes(t)) contenu.tables[t] = [];
+    else throw new Error(`Table « ${t} » absente de la sauvegarde.`);
+  }
   return {
     zip, contenu,
     resume: { chantiers: contenu.tables.chantiers.length, points: contenu.tables.points.length, reserves: contenu.tables.reserves.length, photos: contenu.photos.length },

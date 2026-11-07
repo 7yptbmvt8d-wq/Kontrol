@@ -86,7 +86,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
-- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde).
+- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde, pénalités).
 - `src/services/photos.ts` — compression (1600 px, JPEG 0,7) + vignette 240 px ; `src/components/Photos.tsx` — bandeau, visionneuse.
 - Réserves : `src/domain/reserves.ts` (compteurs, filtres, tri), `src/services/reserves.ts` (création numérotée R-01…,
   relance, levée signalée, levée avec photo obligatoire, refus, réouverture — historique tenu à chaque action),
@@ -111,6 +111,14 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   `src/db/suivi.ts` : crochets Dexie → date de dernière modification (« En attente »).
   Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`). UI : `components/Drive.tsx`
   (pastille accueil, carte Exports), `screens/SectionDrive.tsx` (Réglages : configuration, restauration Drive).
+- Pénalités : **barème du CCAP** (table `penalites`, importé) ≠ **pénalités appliquées** (table `penalitesAppliquees`,
+  schéma v3 : marché, entreprise, article du barème, date, quantité × montant unitaire, statut constatée / notifiée /
+  retenue au décompte). `src/domain/penalites.ts` lit le barème (« 200 € HT par absence », « 1/1000 du montant HT du
+  marché par jour » → × `lot.montantHT`). Écran : onglet Jalons › sélecteur Jalons / Pénalités (route `penalites`),
+  `OngletPenalites`, `SaisiePenalite`, `EditionBareme` (dont « déplacer dans les pénalités appliquées »).
+  Exports : registre PDF / Excel et section 7 du texte pour Claude. Accès depuis Intervenants (total par marché).
+- Photos : deux entrées (`EntreesPhotos`) — appareil photo direct (`capture`) et photothèque (sans `capture`,
+  sélection multiple) : sur iPhone, `capture` empêche de choisir dans la photothèque.
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
   `OngletChecklist`, `DetailPoint` (état en un toucher, commentaire auto-enregistré, photos), `EditionPoint`.
 
@@ -137,6 +145,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 
 ## Feuille de route V1
 (a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne ✅ — **V1 complète (1.0.0)**.
+V1.1 : registre des pénalités appliquées, photos depuis la photothèque.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

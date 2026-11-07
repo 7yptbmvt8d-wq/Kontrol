@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronLeft, ChevronRight, ImageOff, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
+import { Camera, ChevronLeft, ChevronRight, ImageOff, Images, Trash2, X } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { fmtCourt, fmtHeure } from '../domain/dates';
@@ -31,21 +31,40 @@ export function Vignette({ id, taille = 72, onClick, label }: { id: number; tail
 }
 
 /**
- * Bandeau de photos + tuile d'ajout (appareil photo direct).
+ * Deux champs fichier cachés : appareil photo direct (capture) et photothèque (sélection multiple).
+ * Sur iPhone, `capture` ouvre l'appareil photo sans proposer la photothèque : il faut donc deux entrées.
+ */
+export function EntreesPhotos({ camera, phototheque, onAjout }: {
+  camera: RefObject<HTMLInputElement | null>; phototheque: RefObject<HTMLInputElement | null>; onAjout: (f: File[]) => void;
+}) {
+  const recevoir = (e: ChangeEvent<HTMLInputElement>) => { const f = [...(e.target.files ?? [])]; e.target.value = ''; if (f.length) onAjout(f); };
+  return (
+    <>
+      <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={recevoir} />
+      <input ref={phototheque} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={recevoir} />
+    </>
+  );
+}
+
+/**
+ * Bandeau de photos + tuiles d'ajout (appareil photo direct, photothèque).
  * `onAjout` reçoit les fichiers bruts ; la compression est faite par l'appelant via enregistrerPhotos.
  */
 export function BandeauPhotos({ ids, onAjout, onSupprimer, enCours }: {
   ids: number[]; onAjout: (f: File[]) => void; onSupprimer: (id: number) => void; enCours?: boolean;
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const phototheque = useRef<HTMLInputElement>(null);
   const [vue, setVue] = useState<number | null>(null);
   return (
     <div className="photo-strip">
       {ids.map((id, i) => <Vignette key={id} id={id} label={`Photo ${i + 1}, agrandir`} onClick={() => setVue(id)} />)}
-      <input ref={input} type="file" accept="image/*" capture="environment" multiple className="sr-only" tabIndex={-1} aria-hidden
-        onChange={(e) => { const f = [...(e.target.files ?? [])]; e.target.value = ''; if (f.length) onAjout(f); }} />
-      <button type="button" className="photo-add tap" aria-label="Prendre une photo" onClick={() => input.current?.click()} disabled={enCours}>
+      <EntreesPhotos camera={camera} phototheque={phototheque} onAjout={onAjout} />
+      <button type="button" className="photo-add tap" aria-label="Prendre une photo" onClick={() => camera.current?.click()} disabled={enCours}>
         {enCours ? <span className="spinner" aria-hidden /> : <Camera size={26} strokeWidth={2.2} aria-hidden />}
+      </button>
+      <button type="button" className="photo-add tap" aria-label="Choisir dans la photothèque" onClick={() => phototheque.current?.click()} disabled={enCours}>
+        <Images size={26} strokeWidth={2.2} aria-hidden />
       </button>
       {vue !== null && <Visionneuse ids={ids} depart={Math.max(0, ids.indexOf(vue))} onClose={() => setVue(null)} onSupprimer={onSupprimer} />}
     </div>
