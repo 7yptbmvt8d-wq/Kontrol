@@ -30,6 +30,9 @@ En cas d'écart entre le cahier des charges et les maquettes, **le cahier des ch
 Les maquettes donnent la forme ; le cahier des charges donne les fonctions et les libellés métier.
 
 ## Modèle métier
+- **Un lot = un marché.** Chaque lot porte son n° de marché, son titulaire (+ sous-traitants), sa date d'OS
+  (vide = OS générale du chantier) et sa date de réception réelle (vide = règle ci-dessous).
+  Un chantier de 5 lots = 5 marchés = 5 n° de marché.
 - États d'un point : `a_faire` (À faire, bleu) · `en_cours` (En cours, orange) · `conforme` (vert) ·
   `non_conforme` (rouge) · `sans_objet` (gris). Un point non conforme propose de créer une réserve liée.
 - Point bloquant non validé = `bloquant` et état ≠ conforme / sans objet → mis en évidence (fond `--r-bg` + contour `--r`).
@@ -38,33 +41,38 @@ Les maquettes donnent la forme ; le cahier des charges donne les fonctions et le
 - Gravité : bloquante / majeure / mineure. Origine : visite / OPR / CR / contrôle.
 - Lot et entreprise (et localisation) mémorisent la dernière saisie (table `reglages`).
 - Photos : largeur max 1600 px, JPEG 0,7, + vignette ; stockées dans la table `photos`, référencées par id.
-- Dates des jalons **calculées à l'affichage** depuis la date d'OS :
-  - `OS_demarrage` → OS + jours ;
-  - `reception` → date de réception réelle si saisie, sinon prévisionnelle = OS + délai d'exécution
-    (délai = plus grand jalon `categorie: delai` rapporté à l'OS) ;
-  - `autre` → date saisie dans l'app (`dateFixe`).
-  - Jalon fait = `dateRealisee` renseignée.
-- Échéance d'un point : `relative` = jours après l'OS (« 30 », « J+30 », « OS-15 ») ; `date` = JJ/MM/AAAA ou AAAA-MM-JJ ;
-  `evenement` = texte libre.
+- Jalons et pénalités : **communs** (sans `lot`) ou **propres à un marché** (`lot` renseigné).
+- Dates des jalons **calculées à l'affichage** (`contexte()` dans `src/domain/dates.ts`, testé) :
+  - contexte d'un lot : OS du lot (sinon OS générale) ; délai = plus grand jalon `delai` rapporté à l'OS propre au lot,
+    sinon commun ; réception = réelle du lot › (si ni OS ni délai propres) réception de l'ensemble › OS du lot + délai ;
+  - contexte de l'ensemble : OS générale, délai commun, réception réelle du chantier ou OS + délai ;
+  - `OS_demarrage` → OS + jours ; `reception` → réception + jours ; `autre` → date saisie dans l'app (`dateFixe`) ;
+  - un jalon propre à un lot se calcule dans le contexte de ce lot ; un jalon commun dans celui de l'ensemble
+    (ou du lot filtré dans l'onglet Jalons) ;
+  - jalon fait = `dateRealisee` renseignée.
+- Échéance d'un point : `relative` = jours après l'OS **de son lot** (« 30 », « J+30 », « OS-15 ») ;
+  `date` = JJ/MM/AAAA ou AAAA-MM-JJ ; `evenement` = texte libre.
 
 ## Format du fichier JSON d'import
 ```json
 {
-  "chantier": { "nom": "", "operation": "", "site": "", "numero_marche": "",
-    "lots": [{ "code": "GO", "intitule": "", "titulaire": "", "sous_traitants": [] }] },
+  "chantier": { "nom": "", "operation": "", "site": "",
+    "lots": [{ "code": "GO", "intitule": "", "numero_marche": "", "titulaire": "", "sous_traitants": [] }] },
   "points_controle": [{ "id": "GO-3.2-01", "lot": "GO", "article_cctp": "GO 3.2",
     "phase": "preparation | execution | reception | cloture",
     "type": "document | agrement | point_arret | controle | essai | prescription",
     "intitule": "", "critere_acceptation": "", "reference": "NF DTU / norme",
     "responsable": "entreprise | moe | controleur_technique | csps",
     "echeance": { "type": "relative | evenement | date", "valeur": "" }, "bloquant": true }],
-  "jalons": [{ "id": "", "categorie": "delai | documentaire | reception | garantie | paiement",
+  "jalons": [{ "id": "", "lot": "(facultatif : absent = commun)",
+    "categorie": "delai | documentaire | reception | garantie | paiement",
     "intitule": "", "article_ccap": "", "echeance": { "reference": "OS_demarrage | reception | autre", "jours": 0 } }],
-  "penalites": [{ "motif": "", "montant_ou_taux": "", "article_ccap": "" }]
+  "penalites": [{ "lot": "(facultatif)", "motif": "", "montant_ou_taux": "", "article_ccap": "" }]
 }
 ```
-Validation : `src/domain/import.ts` (erreurs bloquantes + avertissements, chemin précis du champ).
-Exemple : `exemples/chantier-exemple.json` (2 lots, 15 points, 6 jalons).
+Validation : `src/domain/import.ts` (erreurs bloquantes + avertissements, chemin précis du champ ;
+tolère BOM et nombres à la place de textes ; ancien `chantier.numero_marche` accepté pour un lot unique).
+Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 jalons dont 1 propre au lot CVC).
 
 ## Arborescence
 - `src/db/schema.ts` — Dexie (tables chantiers, lots, intervenants, points, reserves, jalons, penalites, photos, reglages).
@@ -72,6 +80,17 @@ Exemple : `exemples/chantier-exemple.json` (2 lots, 15 points, 6 jalons).
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
+- `tests/` — tests Vitest de la logique métier (dates, import, migration).
+
+## Fluidité (conventions)
+- Lectures réactives via `useLive(cle, requete, deps)` (`src/db/live.ts`) : affiche immédiatement le dernier
+  résultat connu à la navigation, sans écran vide. Ne pas utiliser `useLiveQuery` directement dans les écrans.
+- Navigation : `aller()` (nouvelle page), `remplacer()` (onglets, après création), `retour(parent)` (bouton retour :
+  revient dans l'historique si le parent est la page précédente, sinon va au parent — jamais de sortie de l'app).
+  Le défilement est restauré au retour arrière.
+- Panneaux du bas : composant `Sheet` (animation ≤ 200 ms, `prefers-reduced-motion` respecté).
+- Sous une barre d'action basse fixe, ajouter `<div className="bar-space" />` en fin de contenu.
+- Écritures multiples en une transaction Dexie.
 - `src/services/` — photos, exports, Drive. `scripts/icons.mjs` — génération des icônes PNG.
 
 ## Feuille de route V1
@@ -83,7 +102,7 @@ Réserves pointées sur plan, PGC SPS, rapport du contrôleur technique, prix/DP
 messagerie avec les entreprises.
 
 ## Commandes
-- `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck`
+- `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
-- Vérifier chaque écran à 390 px de large (pas de défilement horizontal).
+- Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.
 - Déploiement : `.github/workflows/deploy.yml` → GitHub Pages à chaque push sur `main` ou `claude/**`.

@@ -1,5 +1,5 @@
 // Calcul et formatage des dates. Format interne : « AAAA-MM-JJ » (date locale, sans heure).
-import type { Chantier, Jalon, PointControle } from './types';
+import type { Chantier, Jalon, Lot, PointControle } from './types';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -71,38 +71,54 @@ export function fmtJourLong(d = new Date()): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** « +N j » si la date est dépassée, sinon chaîne vide. */
+/** Nombre de jours de retard (0 si la date n’est pas dépassée). */
 export function retard(iso: string | undefined, ref = aujourdHui()): number {
   if (!iso) return 0;
   const e = ecartJours(iso, ref);
   return e > 0 ? e : 0;
 }
 
-// ---------- Jalons ----------
+// ---------- Jalons (un lot = un marché) ----------
 
-/** Délai d'exécution (jours) : le plus long jalon de catégorie « delai » rapporté à l'OS de démarrage. */
-export function delaiExecution(jalons: Jalon[]): number | undefined {
-  const d = jalons.filter((j) => j.categorie === 'delai' && j.reference === 'OS_demarrage');
-  if (!d.length) return undefined;
-  return Math.max(...d.map((j) => j.jours));
+/** Contexte de calcul d'un marché (ou de l'ensemble si lotCode absent). */
+export interface Contexte {
+  dateOS?: string;
+  delai?: number; // jours
+  reception?: string; // réelle si saisie, sinon prévisionnelle
+  receptionReelle: boolean;
 }
 
-/** Date de réception : réelle si saisie, sinon prévisionnelle (OS + délai d'exécution). */
-export function dateReception(ch: Chantier, jalons: Jalon[]): string | undefined {
-  if (ch.dateReceptionReelle) return ch.dateReceptionReelle;
-  const delai = delaiExecution(jalons);
-  if (!ch.dateOS || delai === undefined) return undefined;
-  return ajouterJours(ch.dateOS, delai);
+/** Délai d'exécution (jours) : le plus long jalon « delai » rapporté à l'OS, pour le périmètre donné. */
+function delaiDe(jalons: Jalon[], lotCode: string | undefined): number | undefined {
+  const d = jalons.filter((j) => j.categorie === 'delai' && j.reference === 'OS_demarrage' && (j.lotCode || undefined) === lotCode);
+  return d.length ? Math.max(...d.map((j) => j.jours)) : undefined;
 }
 
-export function dateJalon(j: Jalon, ch: Chantier, jalons: Jalon[]): string | undefined {
+/**
+ * - Ensemble : OS générale ; délai = jalons « delai » communs ; réception = réelle, sinon OS + délai.
+ * - Lot (marché) : OS du lot (sinon OS générale) ; délai propre au lot (sinon délai commun) ;
+ *   réception = réelle du lot ; sinon, si le lot n'a ni OS ni délai propres, celle de l'ensemble ;
+ *   sinon OS du lot + délai (toutes les dates d'un même marché partent de la même OS).
+ */
+export function contexte(ch: Chantier, lots: Lot[], jalons: Jalon[], lotCode?: string): Contexte {
+  const delaiCommun = delaiDe(jalons, undefined);
+  const recCommune = ch.dateReceptionReelle ?? (ch.dateOS && delaiCommun !== undefined ? ajouterJours(ch.dateOS, delaiCommun) : undefined);
+  const lot = lotCode ? lots.find((l) => l.code === lotCode) : undefined;
+  if (!lot) return { dateOS: ch.dateOS, delai: delaiCommun, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  const dateOS = lot.dateOS || ch.dateOS;
+  const delaiPropre = delaiDe(jalons, lot.code);
+  const delai = delaiPropre ?? delaiCommun;
+  if (lot.dateReceptionReelle) return { dateOS, delai, reception: lot.dateReceptionReelle, receptionReelle: true };
+  if (!lot.dateOS && delaiPropre === undefined) return { dateOS, delai, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  return { dateOS, delai, reception: dateOS && delai !== undefined ? ajouterJours(dateOS, delai) : undefined, receptionReelle: false };
+}
+
+export function dateJalon(j: Jalon, ctx: Contexte): string | undefined {
   switch (j.reference) {
     case 'OS_demarrage':
-      return ch.dateOS ? ajouterJours(ch.dateOS, j.jours) : undefined;
-    case 'reception': {
-      const r = dateReception(ch, jalons);
-      return r ? ajouterJours(r, j.jours) : undefined;
-    }
+      return ctx.dateOS ? ajouterJours(ctx.dateOS, j.jours) : undefined;
+    case 'reception':
+      return ctx.reception ? ajouterJours(ctx.reception, j.jours) : undefined;
     default:
       return j.dateFixe;
   }
@@ -125,11 +141,13 @@ export function lireRelatif(v: string): number | undefined {
   return (m[1] === '-' ? -1 : 1) * Number(m[2]);
 }
 
-export function datePoint(p: PointControle, ch: Chantier): string | undefined {
+/** Échéance d'un point : relative à l'OS de son lot (marché), sinon à l'OS générale. */
+export function datePoint(p: PointControle, ch: Chantier, lots: Lot[]): string | undefined {
   if (p.echeance.type === 'date') return lireDate(p.echeance.valeur);
   if (p.echeance.type === 'relative') {
     const n = lireRelatif(p.echeance.valeur);
-    return n !== undefined && ch.dateOS ? ajouterJours(ch.dateOS, n) : undefined;
+    const os = lots.find((l) => l.code === p.lot)?.dateOS || ch.dateOS;
+    return n !== undefined && os ? ajouterJours(os, n) : undefined;
   }
   return undefined; // « evenement » : texte libre
 }

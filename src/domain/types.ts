@@ -24,21 +24,24 @@ export interface Chantier {
   nom: string;
   operation: string;
   site: string;
-  numeroMarche: string;
   phase: PhaseChantier;
   avancementTravaux: number; // %
-  dateOS?: string; // OS de démarrage
-  dateReceptionReelle?: string;
+  dateOS?: string; // OS de démarrage général (par défaut pour tous les lots)
+  dateReceptionReelle?: string; // réception de l'ensemble
   compteurReserve: number; // pour numéroter R-01, R-02…
   creeLe: string;
   majLe: string;
 }
 
+/** Un lot = un marché (son propre n° de marché, son titulaire, son OS, sa réception). */
 export interface Lot {
   id?: number;
   chantierId: number;
   code: string;
   intitule: string;
+  numeroMarche: string;
+  dateOS?: string; // vide = OS générale du chantier
+  dateReceptionReelle?: string; // vide = réception de l'ensemble (ou OS du lot + délai propre)
   ordre: number;
 }
 
@@ -111,6 +114,7 @@ export interface Jalon {
   uid?: number;
   id: string;
   chantierId: number;
+  lotCode?: string; // absent = jalon commun à tous les lots
   categorie: CategorieJalon;
   intitule: string;
   articleCcap: string;
@@ -124,6 +128,7 @@ export interface Jalon {
 export interface Penalite {
   id?: number;
   chantierId: number;
+  lotCode?: string; // absent = commune à tous les lots
   motif: string;
   montantOuTaux: string;
   articleCcap: string;

@@ -1,6 +1,6 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Settings } from 'lucide-react';
 import { db } from '../db/schema';
+import { useLive } from '../db/live';
 import { fmtJourLong } from '../domain/dates';
 import { PHASE_CHANTIER, bloquantNonValide, estOuverte, statutAffiche } from '../domain/statuts';
 import { aller, lien } from '../router';
@@ -9,7 +9,7 @@ import { Logo } from '../components/Logo';
 interface Compteurs { ouvertes: number; retard: number; bloquants: number }
 
 export function Accueil() {
-  const data = useLiveQuery(async () => {
+  const data = useLive('accueil', async () => {
     const [chantiers, reserves, points] = await Promise.all([db.chantiers.toArray(), db.reserves.toArray(), db.points.toArray()]);
     const par = new Map<number, Compteurs>();
     for (const c of chantiers) par.set(c.id!, { ouvertes: 0, retard: 0, bloquants: 0 });
@@ -25,7 +25,7 @@ export function Accueil() {
     }
     chantiers.sort((a, b) => b.majLe.localeCompare(a.majLe));
     return { chantiers, par };
-  });
+  }, []);
 
   const total = { ouvertes: 0, retard: 0, bloquants: 0 };
   data?.par.forEach((k) => { total.ouvertes += k.ouvertes; total.retard += k.retard; total.bloquants += k.bloquants; });

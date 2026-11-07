@@ -1,24 +1,29 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource/ibm-plex-sans/400.css';
-import '@fontsource/ibm-plex-sans/600.css';
-import '@fontsource/ibm-plex-sans/700.css';
-import '@fontsource/ibm-plex-mono/500.css';
-import '@fontsource/ibm-plex-mono/600.css';
+// Polices embarquées, jeu latin uniquement (français) : allège le chargement et le cache hors ligne.
+import '@fontsource/ibm-plex-sans/latin-400.css';
+import '@fontsource/ibm-plex-sans/latin-600.css';
+import '@fontsource/ibm-plex-sans/latin-700.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
+import '@fontsource/ibm-plex-mono/latin-600.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import { App } from './App';
-import { getReglage, setReglage } from './db/schema';
+import { getReglage } from './db/schema';
 import { appliquerTheme, type Theme } from './theme';
 
-getReglage<Theme>('theme', 'sombre').then(appliquerTheme);
+// iOS n'applique :active (retour visuel au toucher) que si un écouteur touchstart existe.
+document.addEventListener('touchstart', () => {}, { passive: true });
 
-// Premier lancement : demander un stockage persistant (évite l'effacement automatique par iOS).
-getReglage<boolean>('persistDemande', false).then(async (deja) => {
-  if (deja || !navigator.storage?.persist) return;
-  await navigator.storage.persist().catch(() => false);
-  await setReglage('persistDemande', true);
-});
+getReglage<Theme>('theme', 'sombre').then(appliquerTheme).catch(() => {});
+
+// Stockage persistant demandé dès le premier lancement, et redemandé tant qu'il n'est pas accordé
+// (iOS ne l'accorde en général qu'une fois l'app ajoutée à l'écran d'accueil).
+(async () => {
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
+  } catch { /* non pris en charge */ }
+})();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Phone, Mail, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
+import { useLive } from '../db/live';
 import type { Intervenant, RoleIntervenant } from '../domain/types';
 import { ROLE_INTERVENANT } from '../domain/statuts';
-import { Sheet, toast } from '../components/ui';
+import { CodeLot, Sheet, toast } from '../components/ui';
 
 const ORDRE_ROLE: RoleIntervenant[] = ['titulaire', 'sous_traitant', 'moa', 'controleur_technique', 'csps', 'autre'];
 
 export function OngletIntervenants({ chantierId }: { chantierId: number }) {
-  const data = useLiveQuery(async () => {
+  const data = useLive(`intervenants:${chantierId}`, async () => {
     const [lots, inter] = await Promise.all([
       db.lots.where('chantierId').equals(chantierId).sortBy('ordre'),
       db.intervenants.where('chantierId').equals(chantierId).toArray(),
@@ -21,20 +21,23 @@ export function OngletIntervenants({ chantierId }: { chantierId: number }) {
   if (!data) return null;
   const tri = (a: Intervenant, b: Intervenant) => ORDRE_ROLE.indexOf(a.role) - ORDRE_ROLE.indexOf(b.role) || a.raisonSociale.localeCompare(b.raisonSociale);
   const groupes = [
-    ...data.lots.map((l) => ({ cle: l.code, code: l.code, titre: l.intitule || l.code, items: data.inter.filter((i) => i.lotCode === l.code).sort(tri) })),
-    { cle: '_', code: '', titre: 'Autres intervenants', items: data.inter.filter((i) => !i.lotCode || !data.lots.some((l) => l.code === i.lotCode)).sort(tri) },
+    ...data.lots.map((l) => ({ cle: l.code, code: l.code, titre: l.intitule || l.code, marche: l.numeroMarche, items: data.inter.filter((i) => i.lotCode === l.code).sort(tri) })),
+    { cle: '_', code: '', titre: 'Autres intervenants', marche: '', items: data.inter.filter((i) => !i.lotCode || !data.lots.some((l) => l.code === i.lotCode)).sort(tri) },
   ].filter((g) => g.items.length || g.code);
 
   const nouveau = (): Intervenant => ({ chantierId, lotCode: '', role: 'autre', raisonSociale: '', contact: '', tel: '', email: '', notes: '' });
 
   return (
-    <div className="screen-part" style={{ paddingBottom: 96 }}>
+    <div>
       <div className="pad stack" style={{ marginTop: 12 }}>
         {groupes.map((g) => (
           <section key={g.cle} className="card flush">
-            <div className="row" style={{ padding: '12px 14px 10px', alignItems: 'baseline' }}>
-              {g.code && <span className="mono" style={{ fontWeight: 600, color: 'var(--accent)' }}>{g.code}</span>}
-              <span className="sec-title">{g.titre}</span>
+            <div style={{ padding: '12px 14px 10px' }}>
+              <div className="row" style={{ alignItems: 'baseline' }}>
+                {g.code && <CodeLot code={g.code} />}
+                <span className="sec-title">{g.titre}</span>
+              </div>
+              {g.code && <div className="ink2">Marché <span className="mono" style={{ overflowWrap: 'anywhere' }}>{g.marche || 'n° non renseigné'}</span></div>}
             </div>
             {g.items.length === 0 && <div className="ink2" style={{ padding: '0 14px 12px' }}>Aucun intervenant.</div>}
             {g.items.map((i) => (
@@ -52,6 +55,7 @@ export function OngletIntervenants({ chantierId }: { chantierId: number }) {
           </section>
         ))}
       </div>
+      <div className="bar-space" />
       <div className="bottom-bar">
         <button type="button" className="btn block tap" onClick={() => setEdition(nouveau())}>
           <Plus size={22} strokeWidth={2.6} aria-hidden />Ajouter un intervenant

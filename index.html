@@ -12,6 +12,14 @@
     <link rel="apple-touch-icon" href="icons/icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <title>Kontrol</title>
+    <script>
+      // Thème avant le premier affichage (copie locale du réglage ; sombre par défaut).
+      try {
+        var t = localStorage.getItem('kontrol-theme');
+        if (t === 'clair') document.documentElement.setAttribute('data-theme', 'light');
+        else if (t === 'systeme') document.documentElement.removeAttribute('data-theme');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

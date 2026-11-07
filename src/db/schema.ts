@@ -27,6 +27,17 @@ export class KontrolDB extends Dexie {
       photos: '++id, chantierId',
       reglages: 'cle',
     });
+    // v2 : un lot = un marché → le n° de marché passe du chantier aux lots.
+    this.version(2).stores({}).upgrade(async (tx) => {
+      const chantiers = await tx.table('chantiers').toArray();
+      for (const c of chantiers) {
+        const ancien = (c as { numeroMarche?: string }).numeroMarche ?? '';
+        await tx.table('lots').where('chantierId').equals(c.id).modify((l: { numeroMarche?: string }) => {
+          if (l.numeroMarche === undefined) l.numeroMarche = ancien;
+        });
+        await tx.table('chantiers').update(c.id, { numeroMarche: undefined });
+      }
+    });
   }
 }
 

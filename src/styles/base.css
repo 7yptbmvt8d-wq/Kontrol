@@ -2,7 +2,11 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { line-height: 1.35; overscroll-behavior-y: none; }
+
+/* Bande derrière la barre d'état iOS (texte blanc imposé par black-translucent) : lisible en clair comme en sombre. */
+.statusbar { position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--statusbar); z-index: 30; pointer-events: none; }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }
@@ -17,6 +21,7 @@ h1, h2, h3 { margin: 0; }
 /* Retour tactile immédiat (≤ 200 ms) */
 .tap { transition: opacity .1s, background-color .1s; -webkit-user-select: none; user-select: none; }
 .tap:active { opacity: .7; }
+@media (hover: hover) { .tap:hover { opacity: .9; } }
 
 /* ---------- Mise en page ---------- */
 .screen {
@@ -26,6 +31,8 @@ h1, h2, h3 { margin: 0; }
 }
 .screen.has-bar { padding-bottom: calc(env(safe-area-inset-bottom) + 12px + 56px + 12px + 24px); }
 .screen.has-fab { padding-bottom: calc(env(safe-area-inset-bottom) + 64px + 40px); }
+/* Espace réservé sous le contenu quand une barre d'action basse est affichée */
+.bar-space { height: calc(12px + 56px + 12px + 16px + env(safe-area-inset-bottom)); }
 .pad { padding-left: var(--gutter); padding-right: var(--gutter); }
 .stack { display: flex; flex-direction: column; gap: var(--gap-md); }
 .row { display: flex; align-items: center; gap: var(--gap-sm); }
@@ -35,7 +42,11 @@ h1, h2, h3 { margin: 0; }
 .hdr { display: flex; align-items: center; gap: 4px; padding: 4px var(--gutter) 0 6px; }
 .hdr-txt { min-width: 0; flex: 1 1 auto; }
 .hdr-sub { font-family: var(--font-mono); font-size: 16px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hdr-title { font-size: var(--fs-h3); font-weight: 700; line-height: 1.2; }
+.hdr-title {
+  font-size: var(--fs-h3); font-weight: 700; line-height: 1.2;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.lot-code { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--accent); }
 
 .icon-btn {
   width: var(--touch); height: var(--touch); flex: 0 0 var(--touch);
@@ -148,6 +159,7 @@ dl { margin: 0; }
 /* Ligne de formulaire (libellé à gauche) */
 .frow { display: flex; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--line); }
 .frow > .rl { flex: 0 0 104px; font-size: 16px; color: var(--ink2); }
+.frow > .grow { flex: 1 1 auto; min-width: 0; }
 .frow > input, .frow > select {
   flex: 1 1 auto; min-width: 0; height: var(--touch); border: 0; outline: 0; background: transparent;
   color: var(--ink); font-size: var(--fs-item); font-weight: 600; padding: 0;
@@ -157,17 +169,22 @@ dl { margin: 0; }
 .switch { width: 52px; height: 32px; accent-color: var(--accent); margin: 0; }
 
 /* ---------- Panneau du bas ---------- */
-.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); }
+.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); touch-action: none; animation: fondu .15s ease-out; }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
   top: calc(64px + env(safe-area-inset-top));
   background: var(--surface); border-radius: var(--rad-sheet) var(--rad-sheet) 0 0;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; outline: none;
+  animation: monte .18s ease-out;
 }
+.sheet-title { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+@keyframes monte { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+@keyframes fondu { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .scrim, .sheet { animation: none; } }
 .sheet.auto { top: auto; max-height: calc(100dvh - 64px - env(safe-area-inset-top)); }
 .sheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; margin-top: 10px; flex: 0 0 auto; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px var(--gutter) 0; }
-.sheet-body { flex: 1 1 auto; overflow-y: auto; padding: 12px var(--gutter) 16px; -webkit-overflow-scrolling: touch; }
+.sheet-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px var(--gutter) 16px; -webkit-overflow-scrolling: touch; }
 .sheet-foot { padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 
 /* ---------- Frise ---------- */
@@ -178,7 +195,8 @@ dl { margin: 0; }
 .tl-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 14px; flex: 0 0 auto; }
 .tl-line { flex: 1 1 auto; width: 2px; background: var(--line); }
 .tl-box { flex: 1 1 auto; min-width: 0; border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; }
-.tl-box.btnlike { border: 0; background: transparent; text-align: left; color: var(--ink); width: 100%; }
+.tl-box.btnlike { border: 0; text-align: left; color: var(--ink); width: 100%; }
+.tl-box.btnlike:not(.alert) { background: transparent; }
 
 /* ---------- Divers ---------- */
 .empty { text-align: center; color: var(--ink2); padding: 32px 16px; }
@@ -187,7 +205,7 @@ dl { margin: 0; }
 .err-list li:first-child { border-top: 0; }
 .err-path { font-family: var(--font-mono); font-size: 16px; color: var(--r); display: block; }
 .toast {
-  position: fixed; left: var(--gutter); right: var(--gutter); z-index: 60;
+  position: fixed; cursor: pointer; left: var(--gutter); right: var(--gutter); z-index: 60;
   bottom: calc(96px + env(safe-area-inset-bottom));
   background: var(--ink); color: var(--bg); border-radius: var(--rad-md); padding: 14px 16px; font-size: 16px; font-weight: 600;
 }
