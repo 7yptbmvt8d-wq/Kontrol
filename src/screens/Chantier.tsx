@@ -3,7 +3,7 @@ import { Plus, SlidersHorizontal } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import { Header } from '../components/ui';
-import { estValide } from '../domain/checklist';
+import { pourcentage, statistiques } from '../domain/checklist';
 import { lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
 import { OngletChecklist } from './OngletChecklist';
@@ -24,7 +24,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
   const ch = useLive(`chantier:${id}`, () => db.chantiers.get(id).then((c) => c ?? null), [id]);
   const avancement = useLive(`avancement:${id}`, async () => {
     const pts = await db.points.where('chantierId').equals(id).toArray();
-    return { valides: pts.filter(estValide).length, total: pts.length };
+    return pourcentage(statistiques(pts));
   }, [id]);
   const [params, setParams] = useState(false);
   const [saisie, setSaisie] = useState(false);
@@ -45,7 +45,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
   return (
     <main className="screen">
       <Header
-        sub={`${avancement ? `${avancement.valides}/${avancement.total} · ` : ''}${ch.site || '—'}`}
+        sub={`${avancement !== undefined ? `${avancement} % · ` : ''}${ch.site || '—'}`}
         title={ch.nom}
         onBack={retourAccueil}
         backLabel="Retour à mes chantiers"

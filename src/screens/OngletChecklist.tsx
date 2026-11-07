@@ -7,6 +7,7 @@ import { ETAT_POINT, PHASE_CONTROLE, bloquantNonValide } from '../domain/statuts
 import { aujourdHui, datePoint, ecartJours, fmtCourt } from '../domain/dates';
 import { grouper, memoriserParcours, statistiques, estValide, type FiltreEtat, type Filtres } from '../domain/checklist';
 import { CodeLot, Pastille } from '../components/ui';
+import { BarreChecklist } from '../components/BarreChecklist';
 import { aller, lien } from '../router';
 import { EditionPoint } from './EditionPoint';
 
@@ -37,7 +38,6 @@ export function OngletChecklist({ chantier: ch }: { chantier: Chantier }) {
   if (!data) return null;
   const { points, lots } = data;
   const st = statistiques(points);
-  const pct = (n: number) => (st.total ? `${(n / st.total) * 100}%` : '0');
   const compte = (v: FiltreEtat) =>
     v === 'tous' ? st.total : v === 'bloquants' ? st.bloquants : v === 'a_faire' ? st.aFaire : v === 'en_cours' ? st.enCours : st.nonConformes;
   const groupes = grouper(points, lots, f);
@@ -49,17 +49,9 @@ export function OngletChecklist({ chantier: ch }: { chantier: Chantier }) {
   return (
     <div>
       <div className="pad" style={{ marginTop: 12 }}>
-        <div className="row" style={{ gap: 12 }}>
-          <div className="bar" style={{ flex: '1 1 auto', height: 10 }} aria-hidden>
-            <span style={{ width: pct(st.conformes), background: 'var(--g)' }} />
-            <span style={{ width: pct(st.sansObjet), background: 'var(--n)' }} />
-            <span style={{ width: pct(st.nonConformes), background: 'var(--r)' }} />
-            <span style={{ width: pct(st.enCours), background: 'var(--o)' }} />
-          </div>
-          <span className="mono" style={{ fontWeight: 600 }}>{st.conformes + st.sansObjet}/{st.total}</span>
-        </div>
+        <BarreChecklist st={st} />
         <div className="ink2" style={{ marginTop: 4 }}>
-          {st.conformes} conforme{st.conformes > 1 ? 's' : ''}
+          <span className="mono">{st.conformes + st.sansObjet}/{st.total}</span> validés · {st.conformes} conforme{st.conformes > 1 ? 's' : ''}
           {st.sansObjet > 0 && ` · ${st.sansObjet} S.O.`}
           {` · ${st.nonConformes} non conforme${st.nonConformes > 1 ? 's' : ''}`}
           {st.nonConformesBloquants > 0 && ` dont ${st.nonConformesBloquants} bloquant${st.nonConformesBloquants > 1 ? 's' : ''}`}

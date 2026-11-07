@@ -66,3 +66,7 @@ export function statistiques(points: PointControle[]): Stats {
 const parcours = new Map<number, number[]>();
 export const memoriserParcours = (chantierId: number, uids: number[]) => parcours.set(chantierId, uids);
 export const lireParcours = (chantierId: number) => parcours.get(chantierId);
+
+/** Avancement de la checklist en % : points validés (conformes + sans objet) / total, arrondi. */
+export const pourcentage = (s: Pick<Stats, 'total' | 'conformes' | 'sansObjet'>) =>
+  s.total ? Math.round(((s.conformes + s.sansObjet) / s.total) * 100) : 0;
