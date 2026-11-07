@@ -128,7 +128,9 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - Navigation : `aller()` (nouvelle page), `remplacer()` (onglets, après création), `retour(parent)` (bouton retour :
   revient dans l'historique si le parent est la page précédente, sinon va au parent — jamais de sortie de l'app).
   Le défilement est restauré au retour arrière.
-- Panneaux du bas : composant `Sheet` (animation ≤ 200 ms, `prefers-reduced-motion` respecté).
+- Panneaux du bas : composant `Sheet` (animation ≤ 200 ms, `prefers-reduced-motion` respecté). Il suit le clavier iOS
+  (visualViewport : le pied « Enregistrer » reste visible) et protège la saisie (fermeture par zone sombre / × / Échap
+  après modification → confirmation). Un formulaire qui enregistre appelle `onClose` directement.
 - Sous une barre d'action basse fixe, ajouter `<div className="bar-space" />` en fin de contenu.
 - Écritures multiples en une transaction Dexie.
 - Hors ligne : vite-plugin-pwa (`registerType: 'prompt'`, manifeste = `public/manifest.webmanifest`) ; tout le build

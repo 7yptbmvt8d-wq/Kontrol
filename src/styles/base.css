@@ -334,3 +334,7 @@ dl { margin: 0; }
 .saisie-photo-actions { display: flex; gap: var(--gap-sm); }
 .saisie-photo-add.sec { border-style: solid; border-color: var(--line); background: var(--surface2); }
 .saisie-photo-ico.sec { background: var(--surface); color: var(--ink); }
+
+/* Clavier ouvert : le panneau occupe la zone visible au-dessus du clavier, pied compris */
+.sheet.clavier { top: auto; border-radius: var(--rad-sheet) var(--rad-sheet) 0 0; }
+.sheet.clavier .sheet-foot { padding-bottom: 12px; }
