@@ -134,20 +134,37 @@ export function ImportChantier() {
   );
 }
 
+/** Regroupe les messages identiques : « 10 jalons : date à saisir » plutôt que 10 lignes. */
+function grouper(items: Probleme[]) {
+  const groupes = new Map<string, Probleme[]>();
+  for (const p of items) groupes.set(p.message, [...(groupes.get(p.message) ?? []), p]);
+  return [...groupes.entries()].map(([message, ps]) => {
+    if (ps.length === 1) return { message, chemin: ps[0].chemin, n: 1 };
+    // Partie commune (ex. « jalons[…].echeance ») + identifiants (J-01, J-04…)
+    const ids = ps.map((p) => (/\(([^)]+)\)/.exec(p.chemin)?.[1] ?? p.chemin).replace(/-/g, '\u2011')); // trait d'union insécable
+    const modele = ps[0].chemin.replace(/\[\d+\]/, '[…]').replace(/ \([^)]+\)/, '');
+    return { message, chemin: `${modele} : ${ids.join(', ')}`, n: ps.length };
+  });
+}
+
 function ListeProblemes({ titre, items, ton, icone }: { titre: string; items: Probleme[]; ton: 'r' | 'o'; icone: ReactNode }) {
   const [tout, setTout] = useState(false);
-  const vus = tout ? items : items.slice(0, MAX_AFFICHES);
+  const groupes = grouper(items);
+  const vus = tout ? groupes : groupes.slice(0, MAX_AFFICHES);
   return (
     <section className="card flush" aria-label={titre} style={ton === 'r' ? { borderColor: 'var(--r)' } : undefined}>
       <div className={`row ${ton === 'r' ? 't-r' : 'c-o'}`} style={{ padding: '12px 14px', fontWeight: 700 }}>{icone}{titre}</div>
       <ul className="err-list">
-        {vus.map((e, i) => (
-          <li key={i}><span className="err-path" style={ton === 'o' ? { color: 'var(--o)' } : undefined}>{e.chemin}</span>{e.message}</li>
+        {vus.map((g, i) => (
+          <li key={i}>
+            <span className="err-path" style={ton === 'o' ? { color: 'var(--o)' } : undefined}>{g.chemin}</span>
+            {g.n > 1 && <span className="mono">{g.n} × </span>}{g.message}
+          </li>
         ))}
       </ul>
-      {items.length > vus.length && (
+      {groupes.length > vus.length && (
         <button type="button" className="btn sec block tap" style={{ borderRadius: 0, border: 0, borderTop: '1px solid var(--line)' }} onClick={() => setTout(true)}>
-          Afficher les {items.length - vus.length} autres
+          Afficher les {groupes.length - vus.length} autres
         </button>
       )}
     </section>

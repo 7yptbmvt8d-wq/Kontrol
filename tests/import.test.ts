@@ -57,3 +57,62 @@ describe('import en base', () => {
     expect((await db.chantiers.get(id))!.phase).toBe('execution');
   });
 });
+
+describe('tolérance aux extractions imparfaites', () => {
+  const base = () => JSON.parse(exemple);
+
+  it('jalon sans durée exploitable : importé en « autre » avec avertissement, sans bloquer', () => {
+    const d = base();
+    d.jalons[0].echeance.jours = '';
+    d.jalons[1].echeance.jours = null;
+    d.jalons[2].echeance.jours = 'à définir';
+    const r = validerImport(JSON.stringify(d));
+    expect(r.erreurs).toEqual([]);
+    expect(r.donnees!.jalons.slice(0, 3).map((j) => j.echeance.reference)).toEqual(['autre', 'autre', 'autre']);
+    expect(r.avertissements.filter((a) => a.chemin.endsWith('.jours'))).toHaveLength(3);
+  });
+
+  it('durées en texte converties en jours calendaires', () => {
+    const d = base();
+    const cas: [unknown, number][] = [['1 mois', 30], ['J+30', 30], ['2 ans', 730], ['15 jours ouvrés', 21], ['8 mois', 240], ['30', 30], [12.4, 12], ['OS-15', -15]];
+    d.jalons = cas.map(([jours], i) => ({ id: `J${i}`, categorie: 'delai', intitule: 'x', echeance: { reference: 'OS_demarrage', jours } }));
+    const r = validerImport(JSON.stringify(d));
+    expect(r.erreurs).toEqual([]);
+    expect(r.donnees!.jalons.map((j) => j.echeance.jours)).toEqual(cas.map(([, n]) => n));
+  });
+
+  it('listes fermées : accents, majuscules et synonymes acceptés', () => {
+    const d = base();
+    Object.assign(d.points_controle[0], { phase: 'Exécution', type: "Point d'arrêt", responsable: 'Maître d’œuvre', bloquant: 'oui' });
+    Object.assign(d.jalons[0], { categorie: 'Délai' });
+    d.jalons[0].echeance.reference = 'OS de démarrage';
+    Object.assign(d.jalons[1], { categorie: 'Document' });
+    const r = validerImport(JSON.stringify(d));
+    expect(r.erreurs).toEqual([]);
+    expect(r.donnees!.points_controle[0]).toMatchObject({ phase: 'execution', type: 'point_arret', responsable: 'moe', bloquant: true });
+    expect(r.donnees!.jalons[0]).toMatchObject({ categorie: 'delai', echeance: { reference: 'OS_demarrage' } });
+    expect(r.donnees!.jalons[1].categorie).toBe('documentaire');
+  });
+
+  it('échéance de point vide ou illisible : conservée en texte, sans bloquer', () => {
+    const d = base();
+    d.points_controle[0].echeance = { type: 'relative', valeur: '' };
+    d.points_controle[1].echeance = { type: 'date', valeur: 'fin novembre' };
+    d.points_controle[2].echeance = { valeur: 'J+45' };
+    d.points_controle[3].echeance = { type: 'relative', valeur: '2 mois' };
+    const r = validerImport(JSON.stringify(d));
+    expect(r.erreurs).toEqual([]);
+    expect(r.donnees!.points_controle.slice(0, 4).map((p) => p.echeance)).toEqual([
+      { type: 'evenement', valeur: '' },
+      { type: 'evenement', valeur: 'fin novembre' },
+      { type: 'relative', valeur: 'J+45' },
+      { type: 'relative', valeur: '60' },
+    ]);
+  });
+
+  it('valeur vraiment inconnue : toujours bloquante', () => {
+    const d = base();
+    d.points_controle[0].phase = 'demain';
+    expect(validerImport(JSON.stringify(d)).erreurs[0].chemin).toBe('points_controle[0] (GO-1.3-01).phase');
+  });
+});

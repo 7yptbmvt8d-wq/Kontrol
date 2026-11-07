@@ -203,7 +203,7 @@ dl { margin: 0; }
 .err-list { list-style: none; margin: 0; padding: 0; }
 .err-list li { padding: 10px 14px; border-top: 1px solid var(--line); font-size: 16px; }
 .err-list li:first-child { border-top: 0; }
-.err-path { font-family: var(--font-mono); font-size: 16px; color: var(--r); display: block; }
+.err-path { font-family: var(--font-mono); font-size: 16px; color: var(--r); display: block; overflow-wrap: anywhere; }
 .toast {
   position: fixed; cursor: pointer; left: var(--gutter); right: var(--gutter); z-index: 60;
   bottom: calc(96px + env(safe-area-inset-bottom));

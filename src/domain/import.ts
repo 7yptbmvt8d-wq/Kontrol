@@ -36,6 +36,40 @@ type Obj = Record<string, unknown>;
 const estObjet = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const liste = (vals: Iterable<string>) => [...vals].join(', ');
 
+/** « Point d'arrêt » → « point_d_arret » : sans accents, minuscules, séparateurs unifiés. */
+const normaliser = (s: string) =>
+  s.toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+/** Synonymes courants rencontrés dans les extractions (candidats, le premier valide pour le champ l'emporte). */
+const SYNONYMES: Record<string, string[]> = {
+  point_d_arret: ['point_arret'], pa: ['point_arret'], visa: ['agrement'], documents: ['document', 'documentaire'],
+  document: ['documentaire'], agrements: ['agrement'], essais: ['essai'], controles: ['controle'],
+  maitre_d_oeuvre: ['moe'], maitrise_d_oeuvre: ['moe'], ct: ['controleur_technique'], controleur: ['controleur_technique'],
+  bureau_de_controle: ['controleur_technique'], sps: ['csps'], coordonnateur_sps: ['csps'], titulaire: ['entreprise'],
+  prepa: ['preparation'], periode_de_preparation: ['preparation'], travaux: ['execution'], opr: ['reception'],
+  gpa: ['cloture', 'garantie'], parfait_achevement: ['garantie'], decompte: ['paiement'], delais: ['delai'],
+  os: ['OS_demarrage'], os_demarrage: ['OS_demarrage'], os_de_demarrage: ['OS_demarrage'], ordre_de_service: ['OS_demarrage'],
+  notification: ['autre'],
+};
+
+/**
+ * Durée en jours calendaires : 30, "30", "J+30", "30 j", "1 mois", "2 semaines", "1 an", "15 jours ouvrés", "-15".
+ * `converti` = la valeur n'était pas un simple nombre entier de jours. Retourne undefined si illisible.
+ */
+export function lireDuree(v: unknown): { jours: number; converti: boolean } | undefined {
+  if (typeof v === 'number') return Number.isFinite(v) ? { jours: Math.round(v), converti: !Number.isInteger(v) } : undefined;
+  if (typeof v !== 'string' || !v.trim()) return undefined;
+  if (/^\s*-?\d+\s*$/.test(v)) return { jours: Number(v), converti: false };
+  const negatif = /^\s*(?:(?:os|j|r[ée]ception)\s*)?-/i.test(v);
+  const t = normaliser(v).replace(/^(?:os|j|reception)_/, '');
+  const m = /^(\d+(?:_\d+)?)_?(j|jours?|jours_calendaires|jours_ouvres|jours_ouvrables|semaines?|mois|ans?|annees?)?$/.exec(t);
+  if (!m) return undefined;
+  const n = Number(m[1].replace('_', '.'));
+  const u = m[2] ?? 'j';
+  const facteur = u.startsWith('semaine') ? 7 : u === 'mois' ? 30 : /^(ans?|annees?)$/.test(u) ? 365 : u.startsWith('jours_ouv') ? 7 / 5 : 1;
+  return { jours: (negatif ? -1 : 1) * Math.round(n * facteur), converti: true };
+}
+
 export function validerImport(texte: string): ResultatValidation {
   const erreurs: Probleme[] = [];
   const avertissements: Probleme[] = [];
@@ -44,7 +78,7 @@ export function validerImport(texte: string): ResultatValidation {
 
   let brut: unknown;
   try {
-    brut = JSON.parse(texte.replace(/^﻿/, '')); // BOM éventuel (fichiers enregistrés sous Windows)
+    brut = JSON.parse(texte.replace(/^\uFEFF/, '')); // BOM éventuel (fichiers enregistrés sous Windows)
   } catch (e) {
     return { erreurs: [{ chemin: 'fichier', message: `JSON illisible : ${(e as Error).message}` }], avertissements };
   }
@@ -63,11 +97,14 @@ export function validerImport(texte: string): ResultatValidation {
   };
   const enumeration = <T extends string>(o: Obj, cle: string, chemin: string, vals: string[]): T => {
     const v = o[cle];
-    if (typeof v !== 'string' || !vals.includes(v)) {
-      err(`${chemin}.${cle}`, v === undefined ? `Champ obligatoire manquant (valeurs : ${liste(vals)}).` : `Valeur « ${String(v)} » non autorisée (valeurs : ${liste(vals)}).`);
-      return vals[0] as T;
+    if (typeof v === 'string' && vals.includes(v)) return v as T;
+    if (typeof v === 'string' && v.trim()) {
+      const n = normaliser(v);
+      const trouve = vals.find((x) => normaliser(x) === n) ?? SYNONYMES[n]?.find((x) => vals.includes(x));
+      if (trouve) return trouve as T;
     }
-    return v as T;
+    err(`${chemin}.${cle}`, v === undefined || v === null || v === '' ? `Champ obligatoire manquant (valeurs : ${liste(vals)}).` : `Valeur « ${String(v)} » non reconnue (valeurs : ${liste(vals)}).`);
+    return vals[0] as T;
   };
   const codesLots = new Set<string>();
   /** Lot facultatif (jalons, pénalités) : absent = commun à tous les lots. */
@@ -149,17 +186,33 @@ export function validerImport(texte: string): ResultatValidation {
       } else if (!estObjet(p.echeance)) {
         err(`${cc}.echeance`, 'Doit être un objet { type, valeur }.');
       } else {
-        const t = enumeration<'relative' | 'evenement' | 'date'>(p.echeance, 'type', `${cc}.echeance`, TYPES_ECHEANCE);
-        const valeur = txt(p.echeance, 'valeur', `${cc}.echeance`, false);
-        if (t === 'relative' && lireRelatif(valeur) === undefined) err(`${cc}.echeance.valeur`, `« ${valeur} » : attendu un nombre de jours après l’OS (ex. 30, J+30, OS-15).`);
-        if (t === 'date' && !lireDate(valeur)) err(`${cc}.echeance.valeur`, `« ${valeur} » : date attendue JJ/MM/AAAA ou AAAA-MM-JJ.`);
-        if (t === 'evenement' && !valeur) avert(`${cc}.echeance.valeur`, 'Événement non décrit.');
+        let valeur = txt(p.echeance, 'valeur', `${cc}.echeance`, false);
+        const brutType = p.echeance.type;
+        // Type absent : déduit de la valeur.
+        let t: 'relative' | 'evenement' | 'date' = brutType === undefined || brutType === null || brutType === ''
+          ? (lireRelatif(valeur) !== undefined || lireDuree(valeur) ? 'relative' : lireDate(valeur) ? 'date' : 'evenement')
+          : enumeration<'relative' | 'evenement' | 'date'>(p.echeance, 'type', `${cc}.echeance`, TYPES_ECHEANCE);
+        if (t === 'relative' && lireRelatif(valeur) === undefined) {
+          const d = lireDuree(valeur);
+          if (d) valeur = String(d.jours); // « 1 mois » → 30
+          else {
+            avert(`${cc}.echeance`, valeur ? `Délai « ${valeur} » illisible : conservé comme texte, sans date calculée.` : 'Échéance relative sans délai : pas de date calculée.');
+            t = 'evenement';
+          }
+        }
+        if (t === 'date' && !lireDate(valeur)) {
+          avert(`${cc}.echeance`, `Date « ${valeur} » illisible (attendu JJ/MM/AAAA) : conservée comme texte.`);
+          t = 'evenement';
+        }
+        if (t === 'evenement' && !valeur) avert(`${cc}.echeance`, 'Échéance non renseignée.');
         echeance = { type: t, valeur };
       }
       let bloquant = false;
       if (p.bloquant === undefined || p.bloquant === null) avert(`${cc}.bloquant`, 'Non renseigné : considéré comme non bloquant.');
-      else if (typeof p.bloquant !== 'boolean') err(`${cc}.bloquant`, 'Doit valoir true ou false.');
-      else bloquant = p.bloquant;
+      else if (typeof p.bloquant === 'boolean') bloquant = p.bloquant;
+      else if (['oui', 'true', '1', 'o', 'yes'].includes(normaliser(String(p.bloquant)))) bloquant = true;
+      else if (['non', 'false', '0', 'n', 'no'].includes(normaliser(String(p.bloquant)))) bloquant = false;
+      else err(`${cc}.bloquant`, `« ${String(p.bloquant)} » : attendu true ou false.`);
       points.push({ id, lot, article_cctp, phase, type, intitule, critere_acceptation, reference, responsable, echeance, bloquant });
     });
   }
@@ -183,11 +236,19 @@ export function validerImport(texte: string): ResultatValidation {
     let jours = 0;
     if (!estObjet(j.echeance)) err(`${cc}.echeance`, 'Doit être un objet { reference, jours }.');
     else {
-      reference = enumeration<RefJalon>(j.echeance, 'reference', `${cc}.echeance`, REFS);
+      const r = j.echeance.reference;
+      reference = r === undefined || r === null || r === '' ? 'autre' : enumeration<RefJalon>(j.echeance, 'reference', `${cc}.echeance`, REFS);
       const v = j.echeance.jours;
-      if (reference !== 'autre' && (typeof v !== 'number' || !Number.isInteger(v))) err(`${cc}.echeance.jours`, 'Doit être un nombre entier de jours.');
-      else if (typeof v === 'number') jours = Math.round(v);
-      if (reference === 'autre') avert(`${cc}.echeance`, 'Référence « autre » : la date sera à saisir dans l’app.');
+      const d = lireDuree(v);
+      if (reference === 'autre') {
+        avert(`${cc}.echeance`, 'Date à saisir dans l’app (référence « autre »).');
+      } else if (!d) {
+        avert(`${cc}.echeance.jours`, v === undefined || v === null || v === '' ? 'Durée non précisée : date à saisir dans l’app.' : `Durée « ${String(v)} » illisible : date à saisir dans l’app.`);
+        reference = 'autre';
+      } else {
+        jours = d.jours;
+        if (d.converti) avert(`${cc}.echeance.jours`, `« ${String(v)} » converti en ${d.jours} jours calendaires.`);
+      }
     }
     jalons.push({ id, lot, categorie, intitule, article_ccap, echeance: { reference, jours } });
   });
