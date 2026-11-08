@@ -125,8 +125,10 @@ dl { margin: 0; }
 .btn.danger { background: var(--r-bg); color: var(--r); border: 1px solid var(--r); }
 
 /* Barre d'action basse */
+/* Ouverture de l'app installée : barres du bas masquées tant que la hauteur de l'écran se stabilise (pwa/demarrage.ts) */
+html.demarrage .bottom-bar, html.demarrage .fab { opacity: 0; transition: none; }
 .bottom-bar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; transition: opacity .2s ease-out;
   padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
   background: var(--bg); border-top: 1px solid var(--line); display: flex; gap: var(--gap-sm);
 }

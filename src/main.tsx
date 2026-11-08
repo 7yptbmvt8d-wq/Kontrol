@@ -1,5 +1,7 @@
 // En premier : retire le jeton Google de l'URL avant que le routeur ne lise l'adresse.
 import './drive/oauth';
+// Masque les barres fixées en bas tant que la hauteur de l'écran se stabilise (ouverture de l'app installée).
+import './pwa/demarrage';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 // Polices embarquées, jeu latin uniquement (français) : allège le chargement et le cache hors ligne.
