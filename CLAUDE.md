@@ -81,12 +81,12 @@ tolère BOM et nombres à la place de textes ; ancien `chantier.numero_marche` a
 Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 jalons dont 1 propre au lot CVC).
 
 ## Arborescence
-- `src/db/schema.ts` — Dexie (tables chantiers, lots, intervenants, points, reserves, jalons, penalites, photos, reglages).
+- `src/db/schema.ts` — Dexie (tables chantiers, lots, intervenants, points, reserves, jalons, penalites, penalitesAppliquees, reunions, photos, reglages).
   Toute évolution du schéma = nouvelle `version(n)` avec migration, jamais de modification de `version(1)`.
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
-- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde, pénalités).
+- `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde, pénalités, réunion).
 - `src/services/photos.ts` — compression (1600 px, JPEG 0,7) + vignette 240 px ; `src/components/Photos.tsx` — bandeau, visionneuse.
 - Réserves : `src/domain/reserves.ts` (compteurs, filtres, tri), `src/services/reserves.ts` (création numérotée R-01…,
   relance, levée signalée, levée avec photo obligatoire, refus, réouverture — historique tenu à chaque action),
@@ -117,6 +117,14 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   marché par jour » → × `lot.montantHT`). Écran : onglet Jalons › sélecteur Jalons / Pénalités (route `penalites`),
   `OngletPenalites`, `SaisiePenalite`, `EditionBareme` (dont « déplacer dans les pénalités appliquées »).
   Exports : registre PDF / Excel et section 7 du texte pour Claude. Accès depuis Intervenants (total par marché).
+- Mode réunion : table `reunions` (schéma v4 : n°, date, heure, type, lieu, participants avec présence P/E/A,
+  observations / décisions par lot ou générales avec responsable et échéance, prochaine réunion, clôture).
+  `src/domain/reunion.ts` (testé) : participants initiaux (MOE + intervenants + participants libres reconduits),
+  reprise des actions non soldées **avec échéance**, `pointsASuivre` (prioritaires : non conformes, en retard,
+  en cours, échéance ≤ 15 j ; autres bloquants à part, repliés), `changementsDepuis` (début de la réunion
+  précédente), `compteRendu` (texte pour Claude). Accès : onglet Intervenants › sélecteur Intervenants / Réunions
+  (route `reunions`) ; écran `Reunion` (route `reunion/<id>`) en 3 étapes Appel / Déroulé / CR.
+  Absence d'un titulaire → pénalité d'absence pré-remplie (article du barème contenant « absen »).
 - Photos : deux entrées (`EntreesPhotos`) — appareil photo direct (`capture`) et photothèque (sans `capture`,
   sélection multiple) : sur iPhone, `capture` empêche de choisir dans la photothèque.
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
@@ -147,7 +155,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 
 ## Feuille de route V1
 (a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne ✅ — **V1 complète (1.0.0)**.
-V1.1 : registre des pénalités appliquées, photos depuis la photothèque.
+V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2 : mode réunion.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

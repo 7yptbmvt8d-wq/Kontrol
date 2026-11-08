@@ -20,5 +20,6 @@ it('v1 → v3 : n° de marché reporté sur les lots ; barème des pénalités c
   expect('numeroMarche' in (await db.chantiers.get(id as number))!).toBe(false);
   expect((await db.penalites.toArray()).map((p) => p.motif)).toEqual(['Absence réunion lot 2']);
   expect(await db.penalitesAppliquees.count()).toBe(0);
-  expect(db.verno).toBe(3);
+  expect(db.verno).toBe(4);
+  expect(await db.reunions.count()).toBe(0);
 });

@@ -7,13 +7,14 @@ import { pourcentage, statistiques } from '../domain/checklist';
 import { aller, lien, remplacer, retour } from '../router';
 import { OngletJalons } from './OngletJalons';
 import { OngletPenalites } from './OngletPenalites';
+import { OngletReunions } from './OngletReunions';
 import { OngletChecklist } from './OngletChecklist';
 import { OngletReserves } from './OngletReserves';
 import { SaisieReserve } from './SaisieReserve';
 import { OngletIntervenants } from './OngletIntervenants';
 import { ParametresChantier } from './ParametresChantier';
 
-export type Onglet = 'checklist' | 'reserves' | 'jalons' | 'penalites' | 'intervenants';
+export type Onglet = 'checklist' | 'reserves' | 'jalons' | 'penalites' | 'intervenants' | 'reunions';
 export const ONGLETS: { v: Onglet; l: string }[] = [
   { v: 'checklist', l: 'Checklist' },
   { v: 'reserves', l: 'Réserves' },
@@ -27,6 +28,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
     const pts = await db.points.where('chantierId').equals(id).toArray();
     return pourcentage(statistiques(pts));
   }, [id]);
+  const nbReunions = useLive(`nbReunions:${id}`, () => db.reunions.where('chantierId').equals(id).count(), [id]);
   const nbPenalites = useLive(`nbPenalites:${id}`, () => db.penalitesAppliquees.where('chantierId').equals(id).count(), [id]);
   const [params, setParams] = useState(false);
   const [saisie, setSaisie] = useState(false);
@@ -64,7 +66,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
       />
       <nav className="tabs" aria-label="Sections du chantier">
         {ONGLETS.map((o) => (
-          <a key={o.v} className="tab tap" href={lien('chantier', id, o.v)} aria-current={onglet === o.v || (o.v === 'jalons' && onglet === 'penalites') ? 'page' : undefined}
+          <a key={o.v} className="tab tap" href={lien('chantier', id, o.v)} aria-current={onglet === o.v || (o.v === 'jalons' && onglet === 'penalites') || (o.v === 'intervenants' && onglet === 'reunions') ? 'page' : undefined}
             onClick={(e) => { e.preventDefault(); remplacer('chantier', id, o.v); }}>
             {o.l}
           </a>
@@ -85,9 +87,20 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
       )}
       {onglet === 'jalons' && <OngletJalons chantier={ch} onParams={() => setParams(true)} />}
       {onglet === 'penalites' && <OngletPenalites chantier={ch} />}
+      {(onglet === 'intervenants' || onglet === 'reunions') && (
+        <div className="pad" style={{ marginTop: 12 }}>
+          <div className="seg pill" role="group" aria-label="Intervenants ou réunions">
+            <button type="button" className="tap" aria-pressed={onglet === 'intervenants'} onClick={() => remplacer('chantier', id, 'intervenants')}>Intervenants</button>
+            <button type="button" className="tap" aria-pressed={onglet === 'reunions'} onClick={() => remplacer('chantier', id, 'reunions')}>
+              Réunions{nbReunions ? <span className="mono" style={{ marginLeft: 6 }}>{nbReunions}</span> : null}
+            </button>
+          </div>
+        </div>
+      )}
       {onglet === 'intervenants' && <OngletIntervenants chantierId={id} />}
+      {onglet === 'reunions' && <OngletReunions chantier={ch} />}
 
-      {onglet !== 'intervenants' && onglet !== 'penalites' && (
+      {onglet !== 'intervenants' && onglet !== 'penalites' && onglet !== 'reunions' && (
         <>
           <div style={{ height: 96 }} aria-hidden />
           <button type="button" className="fab tap" aria-label="Nouvelle réserve" onClick={() => setSaisie(true)}>

@@ -9,8 +9,8 @@ import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 const AUTRE = -1;
 
 /** Appliquer (ou modifier) une pénalité : marché, article du barème, quantité → montant calculé. */
-export function SaisiePenalite({ chantierId, penalite, depuis, lotParDefaut, lots, bareme, intervenants, onClose }: {
-  chantierId: number; penalite?: PenaliteAppliquee; depuis?: Penalite; lotParDefaut?: string;
+export function SaisiePenalite({ chantierId, penalite, depuis, lotParDefaut, datePre, notePre, lots, bareme, intervenants, onClose }: {
+  chantierId: number; penalite?: PenaliteAppliquee; depuis?: Penalite; lotParDefaut?: string; datePre?: string; notePre?: string;
   lots: Lot[]; bareme: Penalite[]; intervenants: Intervenant[]; onClose: () => void;
 }) {
   const titulaire = (code: string) => intervenants.find((i) => i.lotCode === code && i.role === 'titulaire')?.raisonSociale ?? '';
@@ -20,11 +20,11 @@ export function SaisiePenalite({ chantierId, penalite, depuis, lotParDefaut, lot
   const [baremeId, setBaremeId] = useState<number | null>(penalite ? penalite.baremeId ?? AUTRE : depuis?.id ?? null);
   const [choixMotif, setChoixMotif] = useState(baremeId === null);
   const [motifLibre, setMotifLibre] = useState(penalite && penalite.baremeId === undefined ? penalite.motif : '');
-  const [date, setDate] = useState(penalite?.date ?? aujourdHui());
+  const [date, setDate] = useState(penalite?.date ?? datePre ?? aujourdHui());
   const [quantite, setQuantite] = useState(penalite?.quantite ?? 1);
   const [unitaireSaisi, setUnitaireSaisi] = useState<string>(penalite?.montantUnitaire !== undefined ? String(penalite.montantUnitaire) : '');
   const [statut, setStatut] = useState<StatutPenalite>(penalite?.statut ?? 'constatee');
-  const [note, setNote] = useState(penalite?.note ?? '');
+  const [note, setNote] = useState(penalite?.note ?? notePre ?? '');
 
   const lot = lots.find((l) => l.code === lotCode);
   const articles = bareme.filter((b) => !b.lotCode || b.lotCode === lotCode);

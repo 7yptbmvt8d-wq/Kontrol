@@ -8,9 +8,9 @@ import type { Photo } from '../domain/types';
 export const FORMAT = 'kontrol-sauvegarde';
 export const VERSION_FORMAT = 1;
 
-const TABLES = ['chantiers', 'lots', 'intervenants', 'points', 'reserves', 'jalons', 'penalites', 'penalitesAppliquees', 'reglages'] as const;
+const TABLES = ['chantiers', 'lots', 'intervenants', 'points', 'reserves', 'jalons', 'penalites', 'penalitesAppliquees', 'reunions', 'reglages'] as const;
 /** Tables apparues après le format v1 : absentes des anciennes sauvegardes (vides à la restauration). */
-const TABLES_RECENTES: readonly string[] = ['penalitesAppliquees'];
+const TABLES_RECENTES: readonly string[] = ['penalitesAppliquees', 'reunions'];
 type NomTable = (typeof TABLES)[number];
 
 interface PhotoMeta { id: number; chantierId: number; prisLe: string; fichier: string; vignette: string }

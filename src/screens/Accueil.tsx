@@ -54,9 +54,9 @@ export function Accueil() {
       </div>
 
       <div className="pad" style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-        <Tuile n={total.ouvertes} libelle={total.ouvertes > 1 ? 'ouvertes' : 'ouverte'} ton="b" />
-        <Tuile n={total.retard} libelle="en retard" ton="r" />
-        <Tuile n={total.bloquants} libelle={total.bloquants > 1 ? 'bloquants' : 'bloquant'} ton="r" />
+        <Tuile n={total.ouvertes} libelle={total.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'} ton="b" />
+        <Tuile n={total.retard} libelle={total.retard > 1 ? 'réserves en retard' : 'réserve en retard'} ton="r" />
+        <Tuile n={total.bloquants} libelle={total.bloquants > 1 ? 'points bloquants' : 'point bloquant'} ton="r" />
       </div>
 
       <div className="pad stack" style={{ paddingTop: 20, gap: 10 }}>
@@ -78,9 +78,9 @@ export function Accueil() {
                 <BarreChecklist st={k.st} hauteur={8} />
               </div>
               <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-                <span className={`chip ${k.ouvertes ? 't-b' : 't-n'}`}>{k.ouvertes} {k.ouvertes > 1 ? 'ouvertes' : 'ouverte'}</span>
-                <span className={`chip ${k.retard ? 't-r' : 't-n'}`}>{k.retard} en retard</span>
-                <span className={`chip ${k.bloquants ? 't-r' : 't-n'}`}>{k.bloquants} {k.bloquants > 1 ? 'bloquants' : 'bloquant'}</span>
+                <span className={`chip ${k.ouvertes ? 't-b' : 't-n'}`}>{k.ouvertes} {k.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'}</span>
+                <span className={`chip ${k.retard ? 't-r' : 't-n'}`}>{k.retard} {k.retard > 1 ? 'réserves en retard' : 'réserve en retard'}</span>
+                <span className={`chip ${k.bloquants ? 't-r' : 't-n'}`}>{k.bloquants} {k.bloquants > 1 ? 'points bloquants' : 'point bloquant'}</span>
               </div>
             </a>
           );

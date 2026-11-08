@@ -9,6 +9,7 @@ import { Reglages } from './screens/Reglages';
 import { DetailPoint } from './screens/DetailPoint';
 import { DetailReserve } from './screens/DetailReserve';
 import { Exports } from './screens/Exports';
+import { Reunion } from './screens/Reunion';
 import { Toaster } from './components/ui';
 import { BandeauMiseAJour, TirerPourActualiser } from './components/Actualisation';
 
@@ -28,10 +29,12 @@ export function App() {
     ecran = <DetailPoint key={d} chantierId={Number(b)} uid={Number(d)} />;
   } else if (a === 'chantier' && b && /^\d+$/.test(b) && c === 'reserve' && d && /^\d+$/.test(d)) {
     ecran = <DetailReserve key={d} chantierId={Number(b)} rid={Number(d)} />;
+  } else if (a === 'chantier' && b && /^\d+$/.test(b) && c === 'reunion' && d && /^\d+$/.test(d)) {
+    ecran = <Reunion key={d} chantierId={Number(b)} rid={Number(d)} />;
   } else if (a === 'chantier' && b && /^\d+$/.test(b) && c === 'exports') {
     ecran = <Exports key={b} chantierId={Number(b)} />;
   } else if (a === 'chantier' && b && /^\d+$/.test(b)) {
-    const onglet = ONGLETS.some((o) => o.v === c) || c === 'penalites' ? (c as Onglet) : 'checklist';
+    const onglet = ONGLETS.some((o) => o.v === c) || c === 'penalites' || c === 'reunions' ? (c as Onglet) : 'checklist';
     ecran = <Chantier key={b} id={Number(b)} onglet={onglet} />;
   } else ecran = <Accueil />;
   return (

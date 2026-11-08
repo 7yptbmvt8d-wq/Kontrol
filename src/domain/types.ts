@@ -156,6 +156,43 @@ export interface PenaliteAppliquee {
   creeLe: string;
 }
 
+/** Réunion de chantier (mode réunion). */
+export type TypeReunion = 'chantier' | 'preparation' | 'opr' | 'autre';
+export type Presence = 'present' | 'excuse' | 'absent';
+export interface Participant {
+  cle: string; // identifiant stable dans la réunion
+  nom: string;
+  role: string; // « Titulaire », « Sous-traitant », « Maîtrise d'œuvre »…
+  lotCode?: string;
+  intervenantId?: number;
+  presence?: Presence; // vide = non pointé
+}
+/** Observation, décision ou action (responsable + échéance), générale ou propre à un lot. */
+export interface Observation {
+  id: string;
+  lotCode?: string; // absent = généralités
+  texte: string;
+  responsable: string;
+  echeance?: string;
+  faite: boolean;
+  reprise?: number; // n° de la réunion d'origine (action reprise, non soldée)
+}
+export interface Reunion {
+  id?: number;
+  chantierId: number;
+  numero: number;
+  date: string;
+  heure: string;
+  type: TypeReunion;
+  lieu: string;
+  participants: Participant[];
+  observations: Observation[];
+  prochaine?: string; // date de la prochaine réunion
+  cloturee: boolean;
+  creeLe: string; // début de la réunion : référence des « changements depuis la réunion précédente »
+  clotureLe?: string;
+}
+
 export interface Photo {
   id?: number;
   chantierId: number;
