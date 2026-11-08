@@ -109,7 +109,10 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   automatique à l'ouverture si > 24 h et données modifiées ; jeton expiré → reconnexion silencieuse `prompt=none`
   au plus toutes les 6 h ; refus → pastille « Reconnecter » ; l'action demandée reprend au retour de Google).
   `src/db/suivi.ts` : crochets Dexie → date de dernière modification (« En attente »).
-  Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`). UI : `components/Drive.tsx`
+  Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`) ; collage tolérant (`drive/identifiant.ts`).
+  Projet Google Cloud « Kontrol » (kontrol-514109), en production, portée `drive.file` seule : **ne pas supprimer
+  `public/confidentialite.html`** (règles de confidentialité déclarées dans l'écran de consentement Google ; exclue du
+  `navigateFallback` du service worker). UI : `components/Drive.tsx`
   (pastille accueil, carte Exports), `screens/SectionDrive.tsx` (Réglages : configuration, restauration Drive).
 - Pénalités : **barème du CCAP** (table `penalites`, importé) ≠ **pénalités appliquées** (table `penalitesAppliquees`,
   schéma v3 : marché, entreprise, article du barème, date, quantité × montant unitaire, statut constatée / notifiée /
