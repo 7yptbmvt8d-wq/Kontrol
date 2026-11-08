@@ -83,8 +83,7 @@ export function xlsxReserves(d: DonneesChantier, reserves: Reserve[], decoupage:
   return { nom, blob: blob(wb) };
 }
 
-export function xlsxJalons(d: DonneesChantier, nom: string): FichierPret {
-  const wb = XLSX.utils.book_new();
+function ajouterJalons(wb: XLSX.WorkBook, d: DonneesChantier, avecBareme: boolean) {
   const lignes = lignesJalons(d).map((x) => ({
     Date: dateXl(x.date),
     Jalon: x.j.intitule,
@@ -98,16 +97,19 @@ export function xlsxJalons(d: DonneesChantier, nom: string): FichierPret {
   }));
   XLSX.utils.book_append_sheet(wb, feuille(lignes, [11, 55, 10, 13, 18, 18, 9, 11, 16]), 'Jalons');
   const pen = d.penalites.map((p) => ({ Marché: p.lotCode ?? 'Commun', Motif: p.motif, 'Montant ou taux': p.montantOuTaux, 'Article CCAP': p.articleCcap }));
-  if (pen.length) XLSX.utils.book_append_sheet(wb, feuille(pen, [10, 60, 40, 16]), 'Pénalités');
+  if (avecBareme && pen.length) XLSX.utils.book_append_sheet(wb, feuille(pen, [10, 60, 40, 16]), 'Pénalités');
+}
+
+export function xlsxJalons(d: DonneesChantier, nom: string): FichierPret {
+  const wb = XLSX.utils.book_new();
+  ajouterJalons(wb, d, true);
   return { nom, blob: blob(wb) };
 }
 
-/** Points non soldés (tout point ni conforme ni sans objet) + réserves non levées. */
-export function xlsxNonSoldes(d: DonneesChantier, nom: string): FichierPret {
-  const ref = aujourdHui();
-  const wb = XLSX.utils.book_new();
-  const pts = d.points.filter((p) => p.etat !== 'conforme' && p.etat !== 'sans_objet').map((p) => {
+function lignesPoints(d: DonneesChantier, points: DonneesChantier['points'], ref: string): Ligne[] {
+  return points.map((p) => {
     const date = datePoint(p, d.ch, d.lots);
+    const valide = p.etat === 'conforme' || p.etat === 'sans_objet';
     return {
       Lot: p.lot,
       Article: p.articleCctp,
@@ -116,23 +118,50 @@ export function xlsxNonSoldes(d: DonneesChantier, nom: string): FichierPret {
       Type: TYPE_CONTROLE[p.type],
       Bloquant: p.bloquant ? 'Oui' : '',
       État: ETAT_POINT[p.etat].libelle,
+      'Date état': p.etat !== 'a_faire' ? dateXl(p.dateEtat) : undefined,
       Échéance: date ? dateXl(date) : p.echeance.valeur,
-      'Retard (j)': date && ecartJours(date, ref) > 0 ? ecartJours(date, ref) : undefined,
+      'Retard (j)': !valide && date && ecartJours(date, ref) > 0 ? ecartJours(date, ref) : undefined,
       Responsable: RESPONSABLE[p.responsable],
       Critère: p.critere,
       Référentiel: p.reference,
       Commentaire: p.commentaire,
+      Photos: p.photoIds.length || undefined,
     };
   });
-  XLSX.utils.book_append_sheet(wb, feuille(pts, [7, 12, 50, 12, 13, 9, 13, 14, 9, 14, 45, 22, 40]), 'Points non soldés');
+}
+const LARG_POINTS = [7, 12, 50, 12, 13, 9, 13, 11, 14, 9, 14, 45, 22, 40, 7];
+
+/** Points non soldés (tout point ni conforme ni sans objet) + réserves non levées. */
+export function xlsxNonSoldes(d: DonneesChantier, nom: string): FichierPret {
+  const ref = aujourdHui();
+  const wb = XLSX.utils.book_new();
+  const pts = d.points.filter((p) => p.etat !== 'conforme' && p.etat !== 'sans_objet');
+  XLSX.utils.book_append_sheet(wb, feuille(lignesPoints(d, pts, ref), LARG_POINTS), 'Points non soldés');
   const res = d.reserves.filter((r) => r.statut !== 'leve');
   XLSX.utils.book_append_sheet(wb, feuille(lignesReserves(d, res, ref), LARG_RESERVES), 'Réserves non levées');
+  return { nom, blob: blob(wb) };
+}
+
+/** Classeur de suivi complet (dossier Drive du chantier) : checklist, réserves, jalons, pénalités appliquées, barème. */
+export function xlsxSuivi(d: DonneesChantier, nom: string): FichierPret {
+  const ref = aujourdHui();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, feuille(lignesPoints(d, d.points, ref), LARG_POINTS), 'Checklist');
+  XLSX.utils.book_append_sheet(wb, feuille(lignesReserves(d, d.reserves, ref), LARG_RESERVES), 'Réserves');
+  ajouterJalons(wb, d, false);
+  ajouterPenalites(wb, d);
+  wb.Props = { Title: nom, Subject: d.ch.nom };
   return { nom, blob: blob(wb) };
 }
 
 /** Registre des pénalités appliquées : synthèse par marché, détail, barème du CCAP. */
 export function xlsxPenalites(d: DonneesChantier, nom: string): FichierPret {
   const wb = XLSX.utils.book_new();
+  ajouterPenalites(wb, d);
+  return { nom, blob: blob(wb) };
+}
+
+function ajouterPenalites(wb: XLSX.WorkBook, d: DonneesChantier) {
   const synthese = d.lots.map((l) => {
     const ps = d.appliquees.filter((p) => p.lotCode === l.code);
     const total = ps.reduce((t, p) => t + p.montant, 0);
@@ -145,7 +174,7 @@ export function xlsxPenalites(d: DonneesChantier, nom: string): FichierPret {
       '% du marché': l.montantHT ? Math.round((total / l.montantHT) * 10000) / 100 : undefined,
     };
   });
-  XLSX.utils.book_append_sheet(wb, feuille(synthese, [8, 16, 18, 11, 13, 16, 15, 15, 11]), 'Synthèse');
+  XLSX.utils.book_append_sheet(wb, feuille(synthese, [8, 16, 18, 11, 13, 16, 15, 15, 11]), 'Pénalités par marché');
   const detail = d.appliquees.map((p) => ({
     Date: dateXl(p.date), Marché: p.lotCode, Entreprise: p.entreprise, Motif: p.motif, 'Article CCAP': p.articleCcap,
     Quantité: p.quantite, Unité: p.unite, 'Montant unitaire (€ HT)': p.montantUnitaire, 'Montant (€ HT)': p.montant,
@@ -154,5 +183,4 @@ export function xlsxPenalites(d: DonneesChantier, nom: string): FichierPret {
   XLSX.utils.book_append_sheet(wb, feuille(detail, [11, 8, 30, 50, 12, 9, 11, 14, 13, 18, 11, 40]), 'Pénalités appliquées');
   const bareme = d.penalites.map((p) => ({ Marché: p.lotCode ?? 'Commun', Motif: p.motif, 'Montant ou taux': p.montantOuTaux, 'Article CCAP': p.articleCcap }));
   XLSX.utils.book_append_sheet(wb, feuille(bareme, [10, 60, 40, 16]), 'Barème CCAP');
-  return { nom, blob: blob(wb) };
 }

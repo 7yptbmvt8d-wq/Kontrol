@@ -78,7 +78,7 @@ export function SectionDrive({ onRestaurer }: { onRestaurer: (fichier: Blob, nom
       <h2 className="sec-title" style={{ marginTop: 4 }}>Google Drive</h2>
       {!connecte(config) ? (
         <div className="card stack" style={{ gap: 10 }}>
-          <div>Sauvegarde automatique de tous les chantiers dans un dossier « Kontrol » de votre Google Drive (10 dernières conservées).</div>
+          <div>Dossier « Kontrol » de votre Google Drive : un dossier par chantier (rapport PDF, Excel, photos) et les sauvegardes de restauration (10 dernières). Mise à jour automatique chaque jour.</div>
           <div className="ink2">L’app n’a accès qu’aux fichiers qu’elle crée (autorisation « drive.file »).</div>
           <button type="button" className="btn block tap" onClick={() => connecterDrive()}>Connecter Google Drive</button>
           <button type="button" className="btn sec block tap" onClick={() => { setSaisie(client); setModifier(true); }}>Modifier l’identifiant client</button>
@@ -96,7 +96,7 @@ export function SectionDrive({ onRestaurer }: { onRestaurer: (fichier: Blob, nom
       )}
 
       {liste && (
-        <Sheet titre="Sauvegardes Google Drive" sousTitre="Dossier Kontrol" onClose={() => setListe(null)} auto>
+        <Sheet titre="Sauvegardes Google Drive" sousTitre="Kontrol › Sauvegardes" onClose={() => setListe(null)} auto>
           {liste.length === 0 && <div className="empty">Aucune sauvegarde sur Drive.</div>}
           <ul className="card flush" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {liste.map((f, i) => (

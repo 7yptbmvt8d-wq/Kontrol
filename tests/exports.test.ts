@@ -6,7 +6,7 @@ import { db } from '../src/db/schema';
 import { importerChantier, validerImport } from '../src/domain/import';
 import { chargerChantier, nomFichier } from '../src/services/exports/donnees';
 import { pointsNonSoldes } from '../src/services/exports/texte';
-import { xlsxJalons, xlsxPenalites, xlsxReserves } from '../src/services/exports/xlsx';
+import { xlsxJalons, xlsxPenalites, xlsxReserves, xlsxSuivi } from '../src/services/exports/xlsx';
 import { creerReserve, lever } from '../src/services/reserves';
 import { creerSauvegarde, lireSauvegarde, restaurer } from '../src/services/sauvegarde';
 import { pdfTexte } from '../src/services/exports/pdf';
@@ -77,8 +77,12 @@ describe('exports', () => {
     expect(t).toContain('GO · marché 2026-SID-SE-0412-L01 — 300 € HT (0,08 % du marché)');
     expect(t).toContain('- 05/11/2026 · Absence à la réunion (CCAP 4.3.3) · 2 absences × 150 € HT = 300 € HT · Notifiée');
     const wb = XLSX.read(new Uint8Array(await xlsxPenalites(d, 'p.xlsx').blob.arrayBuffer()));
-    expect(wb.SheetNames).toEqual(['Synthèse', 'Pénalités appliquées', 'Barème CCAP']);
-    expect(XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Synthèse'])[0]).toMatchObject({ Marché: 'GO', 'Total (€ HT)': 300, '% du marché': 0.08 });
+    expect(wb.SheetNames).toEqual(['Pénalités par marché', 'Pénalités appliquées', 'Barème CCAP']);
+    expect(XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Pénalités par marché'])[0]).toMatchObject({ Marché: 'GO', 'Total (€ HT)': 300, '% du marché': 0.08 });
+    // Classeur de suivi du dossier Drive : tout le chantier
+    const suivi = XLSX.read(new Uint8Array(await xlsxSuivi(d, 's.xlsx').blob.arrayBuffer()));
+    expect(suivi.SheetNames).toEqual(['Checklist', 'Réserves', 'Jalons', 'Pénalités par marché', 'Pénalités appliquées', 'Barème CCAP']);
+    expect(XLSX.utils.sheet_to_json(suivi.Sheets['Checklist'])).toHaveLength(d.points.length);
   });
 
   it('refuse un fichier qui n’est pas une sauvegarde', async () => {

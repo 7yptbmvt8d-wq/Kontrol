@@ -1,8 +1,10 @@
-// Sauvegarde Google Drive : même archive ZIP que la sauvegarde locale, déposée dans le dossier « Kontrol ».
-// Automatique à l'ouverture si la dernière a plus de 24 h (et que des données ont changé) ; 10 dernières conservées.
+// Sauvegarde Google Drive, dans le dossier « Kontrol » :
+// - Sauvegardes / : même archive ZIP que la sauvegarde locale (restauration), 10 dernières conservées ;
+// - <chantier> / : rapport PDF, classeur Excel et Photos / à jour (dossiersChantiers.ts).
+// Automatique à l'ouverture si la dernière a plus de 24 h (et que des données ont changé).
 import { useSyncExternalStore } from 'react';
 import { connecter, jetonValide, oublierJeton, retourOAuth } from './oauth';
-import { ErreurDrive, compte, dossier, lister, supprimer, telecharger, televerser, type FichierDrive } from './api';
+import { ErreurDrive, compte, dossier, dossierSauvegardes, lister, supprimer, telecharger, televerser, type FichierDrive } from './api';
 import { derniereModification } from '../db/suivi';
 
 export const CONSERVER = 10;
@@ -17,6 +19,8 @@ export interface ConfigDrive {
   reconnexion?: boolean; // Google demande une nouvelle connexion manuelle
   tentativeSilencieuse?: number;
   intention?: 'sauvegarder' | 'lister';
+  /** Dossiers chantiers (PDF, Excel, photos) : dernière mise à jour réussie, ou erreur de la dernière tentative. */
+  documents?: { date?: string; erreur?: string };
 }
 
 export interface EtatDrive { phase: 'repos' | 'sauvegarde' | 'erreur'; progres: number; message?: string }
@@ -83,18 +87,28 @@ export function sauvegarderMaintenant(): Promise<void> {
         if (!config.email) majConfig({ email: (await compte(jeton)).email });
         const idDossier = await dossier(jeton, config.dossierId);
         if (idDossier !== config.dossierId) majConfig({ dossierId: idDossier });
+        const idSauvegardes = await dossierSauvegardes(jeton, idDossier);
         const { creerSauvegarde } = await import('../services/sauvegarde');
         const debut = new Date();
-        const { blob, resume } = await creerSauvegarde((x) => majEtat({ progres: x * 0.4 }));
+        const { blob, resume } = await creerSauvegarde((x) => majEtat({ progres: x * 0.25 }));
         const nom = `Kontrol-sauvegarde-${horodatage()}.zip`;
-        await televerser(jeton, idDossier, nom, blob, (x) => majEtat({ progres: 0.4 + x * 0.55 }));
+        await televerser(jeton, idSauvegardes, nom, blob, (x) => majEtat({ progres: 0.25 + x * 0.35 }));
         // Conservation des 10 dernières
-        const fichiers = await lister(jeton, idDossier);
+        const fichiers = await lister(jeton, idSauvegardes);
         for (const f of fichiers.slice(CONSERVER)) await supprimer(jeton, f.id).catch(() => {});
         majConfig({
           intention: undefined, reconnexion: false,
           derniere: { date: debut.toISOString(), nom, taille: blob.size, chantiers: resume.chantiers, photos: resume.photos },
         });
+        // Dossiers chantiers : un échec n'annule pas la sauvegarde (réessayé à la prochaine)
+        try {
+          const { synchroniserChantiers } = await import('./dossiersChantiers');
+          await synchroniserChantiers(jeton, idDossier, (x) => majEtat({ progres: 0.6 + x * 0.4 }));
+          majConfig({ documents: { date: new Date().toISOString() } });
+        } catch (e) {
+          if (e instanceof ErreurDrive && e.authentification) throw e;
+          majConfig({ documents: { ...config.documents, erreur: (e as Error).message } });
+        }
       });
       majEtat({ phase: 'repos', progres: 1 });
     } catch (e) {
@@ -112,7 +126,7 @@ export async function listerSauvegardes(): Promise<FichierDrive[] | undefined> {
     const idDossier = await dossier(jeton, config.dossierId);
     if (idDossier !== config.dossierId) majConfig({ dossierId: idDossier });
     majConfig({ intention: undefined });
-    return lister(jeton, idDossier);
+    return lister(jeton, await dossierSauvegardes(jeton, idDossier));
   });
 }
 
@@ -127,7 +141,7 @@ export function connecterDrive() {
 
 export function deconnecter() {
   oublierJeton();
-  majConfig({ email: undefined, dossierId: undefined, derniere: undefined, reconnexion: false, intention: undefined, tentativeSilencieuse: undefined });
+  majConfig({ email: undefined, dossierId: undefined, derniere: undefined, documents: undefined, reconnexion: false, intention: undefined, tentativeSilencieuse: undefined });
 }
 
 /**

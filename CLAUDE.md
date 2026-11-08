@@ -109,6 +109,13 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   automatique à l'ouverture si > 24 h et données modifiées ; jeton expiré → reconnexion silencieuse `prompt=none`
   au plus toutes les 6 h ; refus → pastille « Reconnecter » ; l'action demandée reprend au retour de Google).
   `src/db/suivi.ts` : crochets Dexie → date de dernière modification (« En attente »).
+  Arborescence Drive : `Kontrol / Sauvegardes /` (ZIP, 10 conservées ; les ZIP de l'ancienne racine y sont déplacés) et
+  `Kontrol / <chantier> /` (`drive/dossiersChantiers.ts`, mis à jour à chaque sauvegarde) : `Rapport – <chantier>.pdf`
+  (`pdfRapport` : synthèse, checklist, réserves sans photos, jalons, pénalités), `Suivi – <chantier>.xlsx` (`xlsxSuivi`),
+  `Photos /` (nommées par réserve / point, `drive/nommage.ts` testé ; seules les nouvelles sont envoyées ; renommées si
+  besoin ; mises à la corbeille Drive si supprimées de l'app). Fichiers repérés par `appProperties` (pas par le nom).
+  Un dossier de chantier supprimé de l'app reste sur le Drive. Échec des dossiers ≠ échec de la sauvegarde (`config.documents`).
+  À venir : `Comptes rendus /` (CR .docx de réunion depuis le modèle de l'utilisateur).
   Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`) ; collage tolérant (`drive/identifiant.ts`).
   Projet Google Cloud « Kontrol » (kontrol-514109), en production, portée `drive.file` seule : **ne pas supprimer
   `public/confidentialite.html`** (règles de confidentialité déclarées dans l'écran de consentement Google ; exclue du
@@ -167,6 +174,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 ## Feuille de route V1
 (a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne ✅ — **V1 complète (1.0.0)**.
 V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2 : mode réunion.
+V1.3 : dossiers chantiers sur Google Drive (rapport PDF, Excel, photos).
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

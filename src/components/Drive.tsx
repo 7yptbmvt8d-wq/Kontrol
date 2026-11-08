@@ -69,7 +69,15 @@ export function CarteDrive() {
         <>
           <dl>
             <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Compte</dt><dd className="mono ellipsis" style={{ margin: 0 }}>{config.email}</dd></div>
-            <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Dossier</dt><dd className="mono" style={{ margin: 0 }}>{NOM_DOSSIER} · {CONSERVER} dernières</dd></div>
+            <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Dossier</dt><dd className="mono" style={{ margin: 0 }}>{NOM_DOSSIER}</dd></div>
+            <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Chantiers</dt>
+              <dd style={{ margin: 0 }}>
+                Un dossier par chantier : rapport PDF, Excel, photos
+                {config.documents?.erreur
+                  ? <div className="c-o" style={{ fontWeight: 600 }}>Mise à jour incomplète : {config.documents.erreur}</div>
+                  : config.documents?.date && <div className="mono ink2">à jour le {fmtCourt(jourLocal(config.documents.date))} · {fmtHeure(config.documents.date)}</div>}
+              </dd></div>
+            <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Sauvegardes</dt><dd style={{ margin: 0 }}>ZIP de restauration · {CONSERVER} dernières</dd></div>
             {config.derniere && (
               <div className="ex"><dt style={{ flex: '0 0 96px' }} className="ink2">Contenu</dt>
                 <dd style={{ margin: 0 }}>{config.derniere.chantiers} chantier{config.derniere.chantiers > 1 ? 's' : ''} · {config.derniere.photos} photos · {taille(config.derniere.taille)}</dd></div>

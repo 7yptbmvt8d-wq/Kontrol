@@ -2,8 +2,9 @@
 import { jsPDF } from 'jspdf';
 import { db } from '../../db/schema';
 import type { Reserve } from '../../domain/types';
-import { aujourdHui, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
-import { GRAVITE, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
+import { aujourdHui, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
+import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, PHASE_CONTROLE, bloquantNonValide, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
+import { estValide, grouper, statistiques } from '../../domain/checklist';
 import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier } from './donnees';
 import { STATUT_PENALITE, euros, pluriel } from '../../domain/penalites';
 import { TYPES, type FichierPret } from './partage';
@@ -83,6 +84,7 @@ class DocPdf {
     }
   }
   espace(mm: number) { this.y += mm; }
+  nouvellePage() { this.doc.addPage(); this.enTete(); }
   trait() { this.place(3); this.doc.setDrawColor(...TRAIT); this.doc.line(MARGE, this.y, 210 - MARGE, this.y); this.y += 3; }
   terminer(): Blob {
     const d = this.doc;
@@ -99,7 +101,7 @@ class DocPdf {
 
 const edition = () => `Édité le ${fmtDate(aujourdHui())} à ${fmtHeure(new Date().toISOString())} · Kontrol`;
 
-async function blocReserve(doc: DocPdf, r: Reserve, ref: string) {
+async function blocReserve(doc: DocPdf, r: Reserve, ref: string, avecPhotos = true) {
   const d = doc.doc;
   const st = statutAffiche(r, ref);
   const ton = st === 'en_retard' ? 'r' : st === 'leve' ? 'g' : st === 'ouvert' ? 'b' : 'o';
@@ -124,7 +126,9 @@ async function blocReserve(doc: DocPdf, r: Reserve, ref: string) {
     ...r.photoIds.slice(0, 3).map((id) => ({ id, etiquette: `Avant · ${fmtCourt(r.creeLe.slice(0, 10))}`, ton: 'r' as Ton })),
     ...(r.levee?.photoIds ?? []).slice(0, 2).map((id) => ({ id, etiquette: `Après · ${fmtCourt(r.levee!.date)}`, ton: 'g' as Ton })),
   ];
-  if (ids.length) {
+  const nbPhotos = r.photoIds.length + (r.levee?.photoIds.length ?? 0);
+  if (!avecPhotos && nbPhotos) doc.texte(`${nbPhotos} photo${nbPhotos > 1 ? 's' : ''} : voir le dossier Photos`, { taille: 9, couleur: GRIS });
+  if (avecPhotos && ids.length) {
     const images = (await Promise.all(ids.map(async (x) => ({ ...x, img: await imagePdf(x.id) })))).filter((x) => x.img);
     const parLigne = 3;
     const l = (LARGEUR - (parLigne - 1) * 4) / parLigne;
@@ -150,13 +154,10 @@ async function blocReserve(doc: DocPdf, r: Reserve, ref: string) {
   doc.trait();
 }
 
-/**
- * Liste de réserves (avec photos). `titre` : ex. « Réserves – METALCO ».
- * `marches` : n° de marché concernés (affichés en tête).
- */
-export async function pdfReserves(d: DonneesChantier, reserves: Reserve[], titre: string, nom: string, onProgres?: (n: number) => void): Promise<FichierPret> {
+const enTeteChantier = (d: DonneesChantier) => `${d.ch.nom}${d.ch.site ? ` — ${d.ch.site}` : ''}`;
+
+async function sectionReserves(doc: DocPdf, d: DonneesChantier, reserves: Reserve[], titre: string, avecPhotos: boolean, onProgres?: (n: number) => void) {
   const ref = aujourdHui();
-  const doc = new DocPdf(`${d.ch.nom}${d.ch.site ? ` — ${d.ch.site}` : ''}`, edition());
   doc.texte(titre, { taille: 16, gras: true, couleur: ACCENT });
   doc.espace(1);
   const lots = [...new Set(reserves.map((r) => r.lotCode))];
@@ -173,14 +174,25 @@ export async function pdfReserves(d: DonneesChantier, reserves: Reserve[], titre
   doc.trait();
   if (!reserves.length) doc.texte('Aucune réserve.', { couleur: GRIS });
   for (let i = 0; i < reserves.length; i++) {
-    await blocReserve(doc, reserves[i], ref);
+    await blocReserve(doc, reserves[i], ref, avecPhotos);
     onProgres?.((i + 1) / reserves.length);
   }
+}
+
+/** Liste de réserves (avec photos). `titre` : ex. « Réserves – METALCO ». */
+export async function pdfReserves(d: DonneesChantier, reserves: Reserve[], titre: string, nom: string, onProgres?: (n: number) => void): Promise<FichierPret> {
+  const doc = new DocPdf(enTeteChantier(d), edition());
+  await sectionReserves(doc, d, reserves, titre, true, onProgres);
   return { nom, blob: doc.terminer() };
 }
 
 export function pdfJalons(d: DonneesChantier, nom: string): FichierPret {
-  const doc = new DocPdf(`${d.ch.nom}${d.ch.site ? ` — ${d.ch.site}` : ''}`, edition());
+  const doc = new DocPdf(enTeteChantier(d), edition());
+  sectionJalons(doc, d);
+  return { nom, blob: doc.terminer() };
+}
+
+function sectionJalons(doc: DocPdf, d: DonneesChantier) {
   doc.texte('État des jalons', { taille: 16, gras: true, couleur: ACCENT });
   doc.espace(1);
   if (d.ch.dateOS) doc.texte(`OS générale : ${fmtDate(d.ch.dateOS)}`, { taille: 9.5, couleur: GRIS });
@@ -211,12 +223,16 @@ export function pdfJalons(d: DonneesChantier, nom: string): FichierPret {
       doc.espace(1.5);
     }
   }
-  return { nom, blob: doc.terminer() };
 }
 
 /** Registre des pénalités appliquées, par marché (pour notification ou décompte). */
 export function pdfPenalites(d: DonneesChantier, nom: string): FichierPret {
-  const doc = new DocPdf(`${d.ch.nom}${d.ch.site ? ` — ${d.ch.site}` : ''}`, edition());
+  const doc = new DocPdf(enTeteChantier(d), edition());
+  sectionPenalites(doc, d);
+  return { nom, blob: doc.terminer() };
+}
+
+function sectionPenalites(doc: DocPdf, d: DonneesChantier) {
   doc.texte('Registre des pénalités', { taille: 16, gras: true, couleur: ACCENT });
   const total = d.appliquees.reduce((t, p) => t + p.montant, 0);
   doc.texte(`${d.appliquees.length} pénalité(s) · total ${euros(total)}`, { taille: 10, gras: true });
@@ -248,6 +264,102 @@ export function pdfPenalites(d: DonneesChantier, nom: string): FichierPret {
     doc.texte(`Total ${l.code} : ${euros(t)}${l.montantHT ? ` (${((t / l.montantHT) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} % du marché)` : ''}`, { gras: true, taille: 10.5 });
     doc.espace(2);
     doc.trait();
+  }
+}
+
+// ---------- Rapport de chantier (déposé dans le dossier Drive du chantier) ----------
+
+function sectionSynthese(doc: DocPdf, d: DonneesChantier) {
+  const ref = aujourdHui();
+  doc.texte('Rapport de chantier', { taille: 18, gras: true, couleur: ACCENT });
+  doc.texte(d.ch.nom, { taille: 13, gras: true });
+  const infos = [d.ch.operation && `Opération : ${d.ch.operation}`, d.ch.site && `Site : ${d.ch.site}`, `Phase : ${PHASE_CHANTIER[d.ch.phase]}`,
+    d.ch.dateOS && `OS générale : ${fmtDate(d.ch.dateOS)}`].filter(Boolean).join('   ·   ');
+  doc.texte(infos, { taille: 9.5, couleur: GRIS });
+  doc.espace(2);
+  doc.texte('Marchés', { taille: 12, gras: true });
+  for (const l of d.lots) {
+    const titulaire = d.intervenants.find((i) => i.role === 'titulaire' && i.lotCode === l.code)?.raisonSociale;
+    doc.texte(`${l.code}${l.intitule ? ` – ${l.intitule}` : ''} · marché ${l.numeroMarche || 'n° non renseigné'}${titulaire ? ` · ${titulaire}` : ''}${l.dateOS ? ` · OS ${fmtDate(l.dateOS)}` : ''}`, { taille: 9.5 });
+  }
+  doc.espace(2);
+  doc.trait();
+
+  const st = statistiques(d.points);
+  const pc = st.total ? Math.round(((st.conformes + st.sansObjet) / st.total) * 100) : 0;
+  doc.texte('Checklist', { taille: 12, gras: true });
+  doc.texte(`${pc} % validés (${st.conformes + st.sansObjet}/${st.total}) · ${st.conformes} conforme(s) · ${st.sansObjet} sans objet · ${st.nonConformes} non conforme(s) · ${st.enCours} en cours · ${st.aFaire} à faire`, { taille: 10 });
+  if (st.bloquants) doc.texte(`${st.bloquants} point(s) bloquant(s) non validé(s)`, { taille: 10, gras: true, couleur: TON.r });
+  doc.espace(2);
+
+  const rs = d.reserves;
+  const retard = rs.filter((r) => statutAffiche(r, ref) === 'en_retard').length;
+  doc.texte('Réserves', { taille: 12, gras: true });
+  doc.texte(`${rs.length} réserve(s) · ${rs.filter((r) => r.statut !== 'leve').length} non levée(s) · ${rs.filter((r) => r.statut === 'leve').length} levée(s)`, { taille: 10 });
+  if (retard) doc.texte(`${retard} réserve(s) en retard`, { taille: 10, gras: true, couleur: TON.r });
+  doc.espace(2);
+
+  const jal = lignesJalons(d);
+  const jRetard = jal.filter((x) => x.retard).length;
+  const prochain = jal.find((x) => !x.j.dateRealisee && x.date && x.date >= ref);
+  doc.texte('Jalons', { taille: 12, gras: true });
+  doc.texte(`${jal.length} jalon(s) · ${jal.filter((x) => x.j.dateRealisee).length} fait(s)${prochain ? ` · prochain : ${prochain.j.intitule} le ${fmtDate(prochain.date)}` : ''}`, { taille: 10 });
+  if (jRetard) doc.texte(`${jRetard} jalon(s) en retard`, { taille: 10, gras: true, couleur: TON.r });
+  doc.espace(2);
+
+  const total = d.appliquees.reduce((t, p) => t + p.montant, 0);
+  doc.texte('Pénalités appliquées', { taille: 12, gras: true });
+  doc.texte(d.appliquees.length ? `${d.appliquees.length} pénalité(s) · total ${euros(total)}` : 'Aucune', { taille: 10 });
+}
+
+function sectionChecklist(doc: DocPdf, d: DonneesChantier) {
+  const ref = aujourdHui();
+  const pdf = doc.doc;
+  doc.texte('Checklist de contrôle', { taille: 16, gras: true, couleur: ACCENT });
+  doc.espace(1);
+  if (!d.points.length) doc.texte('Aucun point de contrôle.', { couleur: GRIS });
+  for (const g of grouper(d.points, d.lots, { etat: 'tous', lot: '', texte: '' })) {
+    doc.place(20);
+    doc.espace(2);
+    doc.texte(`${g.lot} · ${PHASE_CONTROLE[g.phase]}   (${g.valides}/${g.total} validés)`, { taille: 11.5, gras: true });
+    doc.trait();
+    for (const p of g.points) {
+      const e = ETAT_POINT[p.etat];
+      doc.place(12);
+      const y0 = doc.y;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(...TON[e.ton]);
+      pdf.text(pdfTexte(e.libelle), 210 - MARGE, y0 + 3.6, { align: 'right' });
+      doc.texte(p.articleCctp || p.id, { taille: 8.5, couleur: GRIS, largeur: LARGEUR - 34 });
+      doc.texte(p.intitule, { taille: 10, gras: true, largeur: LARGEUR - 34 });
+      const date = estValide(p) ? undefined : datePoint(p, d.ch, d.lots);
+      const retard = date ? ecartJours(date, ref) : 0;
+      const details = [
+        bloquantNonValide(p) && 'Point bloquant',
+        date && `Échéance ${fmtDate(date)}${retard > 0 ? ` (+${retard} j)` : ''}`,
+        !date && !estValide(p) && p.echeance.type === 'evenement' && p.echeance.valeur && `Échéance : ${p.echeance.valeur}`,
+        p.dateEtat && estValide(p) && `${e.libelle} le ${fmtDate(p.dateEtat.slice(0, 10))}`,
+        p.photoIds.length && `${p.photoIds.length} photo(s)`,
+      ].filter(Boolean).join('   ·   ');
+      if (details) doc.texte(details, { taille: 8.5, couleur: bloquantNonValide(p) || retard > 0 ? TON.r : GRIS, largeur: LARGEUR - 34 });
+      if (p.commentaire.trim()) doc.texte(`Commentaire : ${p.commentaire.trim()}`, { taille: 9, couleur: GRIS, largeur: LARGEUR - 34 });
+      doc.espace(1);
+    }
+  }
+}
+
+/** Rapport complet du chantier : synthèse, checklist, réserves (sans photos), jalons, pénalités appliquées. */
+export async function pdfRapport(d: DonneesChantier, nom: string): Promise<FichierPret> {
+  const doc = new DocPdf(enTeteChantier(d), edition());
+  sectionSynthese(doc, d);
+  doc.nouvellePage();
+  sectionChecklist(doc, d);
+  doc.nouvellePage();
+  await sectionReserves(doc, d, d.reserves, 'Réserves', false);
+  doc.nouvellePage();
+  sectionJalons(doc, d);
+  if (d.appliquees.length) {
+    doc.nouvellePage();
+    sectionPenalites(doc, d);
   }
   return { nom, blob: doc.terminer() };
 }
