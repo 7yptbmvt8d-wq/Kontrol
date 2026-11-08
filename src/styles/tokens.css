@@ -28,7 +28,8 @@
   --n: #B4BCC8;  --n-bg: #232C3A;   /* gris   : sans objet */
 
   /* Ajout Kontrol : bande derrière la barre d'état iOS (texte toujours blanc) — identique dans les deux modes */
-  --statusbar: #0B1220;
+  --statusbar: #0B1220; /* fond sombre fixe (visionneuse photo) */
+  --barre-etat: #0B1220; /* bande sous l'heure / la batterie = fond de page (iOS 26 la floute avec le contenu) */
   /* Ajout Kontrol : texte posé sur une photo (voile --scrim) */
   --on-photo: #FFFFFF;
 
@@ -63,6 +64,7 @@
 
 :root[data-theme="light"] {
   --bg: #EEF1F6;
+  --barre-etat: #EEF1F6;
   --surface: #FFFFFF;
   --surface2: #F3F5F9;
   --ink: #0B1220;
@@ -81,7 +83,7 @@
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #EEF1F6; --surface: #FFFFFF; --surface2: #F3F5F9;
+    --bg: #EEF1F6; --barre-etat: #EEF1F6; --surface: #FFFFFF; --surface2: #F3F5F9;
     --ink: #0B1220; --ink2: #4A5568; --line: #D5DBE5;
     --accent: #5B47E0; --on-accent: #FFFFFF; --acc-bg: #E6E2FF;
     --r: #B91C1C; --r-bg: #FDE8E8; --o: #B45309; --o-bg: #FDF0E1;
