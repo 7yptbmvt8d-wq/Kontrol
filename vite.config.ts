@@ -26,6 +26,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/confidentialite\.html$/], // page publique (écran de consentement Google)
         cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },

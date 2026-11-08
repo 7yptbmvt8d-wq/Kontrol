@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kontrol – Règles de confidentialité</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 17px/1.5 -apple-system, system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 26px; margin: 0 0 4px; }
+    h2 { font-size: 19px; margin: 28px 0 6px; }
+    p, li { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>Kontrol – Règles de confidentialité</h1>
+  <p>Mise à jour : 8 novembre 2026</p>
+
+  <p>Kontrol est une application web (PWA) de suivi de chantier destinée à un usage professionnel par son utilisateur :
+    checklist de contrôle, réserves, jalons, pénalités, réunions et exports.</p>
+
+  <h2>Données traitées</h2>
+  <p>Toutes les données saisies (chantiers, points de contrôle, réserves, photos, réunions, réglages) sont enregistrées
+    <strong>uniquement sur l’appareil de l’utilisateur</strong>, dans le stockage local du navigateur (IndexedDB).
+    Kontrol n’a aucun serveur : aucune donnée n’est transmise à l’éditeur de l’application ni à un tiers.</p>
+
+  <h2>Google Drive (facultatif)</h2>
+  <ul>
+    <li>Si l’utilisateur active la sauvegarde Google Drive, Kontrol demande uniquement l’autorisation
+      <code>drive.file</code> : l’application ne peut voir et modifier <strong>que les fichiers qu’elle a elle-même créés</strong>
+      (dossier « Kontrol »). Elle n’a accès à aucun autre fichier du Drive.</li>
+    <li>Les fichiers envoyés sont des sauvegardes de l’application (ZIP : données et photos) et, le cas échéant,
+      des comptes rendus de réunion. Ils sont stockés sur le Google Drive de l’utilisateur, qui en garde seul la maîtrise.</li>
+    <li>Le jeton d’accès Google (valable 1 heure) est conservé sur l’appareil uniquement. Il n’est jamais transmis ailleurs
+      qu’aux services Google Drive.</li>
+    <li>L’utilisation des informations reçues des API Google respecte les
+      <a href="https://developers.google.com/terms/api-services-user-data-policy">règles relatives aux données utilisateur des services d’API Google</a>,
+      y compris les exigences d’utilisation limitée.</li>
+  </ul>
+
+  <h2>Partage et publicité</h2>
+  <p>Aucune donnée n’est vendue, partagée, utilisée à des fins publicitaires ou analysée. L’application ne contient aucun
+    traceur ni outil de mesure d’audience.</p>
+
+  <h2>Suppression</h2>
+  <ul>
+    <li>Données de l’appareil : suppression d’un chantier dans l’application, ou effacement des données du site dans le navigateur.</li>
+    <li>Google Drive : suppression du dossier « Kontrol » dans le Drive ; l’accès de l’application se retire sur
+      <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+  </ul>
+
+  <p><a href="./">Retour à Kontrol</a></p>
+</body>
+</html>
