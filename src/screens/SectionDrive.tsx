@@ -3,6 +3,7 @@ import { ClipboardCopy, CloudDownload, LogOut } from 'lucide-react';
 import { Sheet, toast } from '../components/ui';
 import { CarteDrive } from '../components/Drive';
 import { URL_RETOUR, enregistrerIdClient, idClient } from '../drive/oauth';
+import { extraireIdClient } from '../drive/identifiant';
 import { connecte, connecterDrive, deconnecter, listerSauvegardes, telechargerSauvegarde, useDrive } from '../drive/sauvegardeDrive';
 import type { FichierDrive } from '../drive/api';
 import { fmtDate, fmtHeure, jourLocal } from '../domain/dates';
@@ -52,8 +53,13 @@ export function SectionDrive({ onRestaurer }: { onRestaurer: (fichier: Blob, nom
           <input id="gd-client" className="input mono" placeholder="…apps.googleusercontent.com" autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={saisie} onChange={(e) => setSaisie(e.target.value)} />
         </div>
-        <button type="button" className="btn block tap" disabled={!/\.apps\.googleusercontent\.com\s*$/.test(saisie)} onClick={() => {
-          enregistrerIdClient(saisie); setClient(saisie.trim()); setModifier(false); toast('Identifiant enregistré');
+        {saisie.trim() !== '' && !extraireIdClient(saisie) && (
+          <div className="c-r" style={{ fontWeight: 600 }}>Identifiant non reconnu : il doit se terminer par « .apps.googleusercontent.com ».</div>
+        )}
+        <button type="button" className="btn block tap" disabled={!saisie.trim()} onClick={() => {
+          const id = extraireIdClient(saisie);
+          if (!id) { toast('Identifiant non reconnu : collez l’ID client (…apps.googleusercontent.com)'); return; }
+          enregistrerIdClient(id); setClient(id); setSaisie(''); setModifier(false); toast('Identifiant enregistré');
         }}>Enregistrer</button>
         <div className="ink2">À déclarer dans Google Cloud (identifiant de type « Application Web ») :</div>
         <dl className="card flush">
