@@ -6,7 +6,7 @@ import { fmtDate, fmtHeure } from '../domain/dates';
 import { Header, Segment, Sheet, toast } from '../components/ui';
 import { nouvelleVersionDisponible, rafraichir } from '../pwa/miseAJour';
 import { db, getReglage, setReglage } from '../db/schema';
-import { PROFIL_DEFAUT, participantMoe, type Profil } from '../domain/reunion';
+import { PROFIL_DEFAUT, participantEntiteMoe, participantMoe, type Profil } from '../domain/reunion';
 import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
 import { SectionDrive } from './SectionDrive';
@@ -129,8 +129,10 @@ function SectionProfil() {
     await setReglage('profil', v);
     // Réunions en cours : mise à jour de la ligne du représentant du MOE (présence conservée)
     const moe = participantMoe(v);
+    const entite = participantEntiteMoe(v);
     await db.reunions.filter((r) => !r.cloturee).modify((r) => {
-      r.participants = r.participants.map((p) => (p.cle === 'moe' ? { ...moe, presence: p.presence } : p));
+      r.participants = r.participants.map((p) =>
+        p.cle === 'moe' ? { ...moe, presence: p.presence } : p.cle === entite.cle ? { ...entite, presence: p.presence } : p);
     });
     toast('Enregistré');
   };
@@ -144,9 +146,11 @@ function SectionProfil() {
         <div className="frow"><label className="rl" htmlFor="pf-fct">Fonction</label>
           <input id="pf-fct" value={v.fonction} placeholder="Représentant du MOE" onChange={(e) => set('fonction', e.target.value)} /></div>
         <div className="frow" style={{ borderBottom: 0 }}><label className="rl" htmlFor="pf-org">Organisme</label>
-          <input id="pf-org" value={v.organisme} placeholder="ex. SID – USID de Corse" onChange={(e) => set('organisme', e.target.value)} /></div>
+          <input id="pf-org" value={v.organisme} placeholder="ex. SID – USID de Corse (nom du MOE)" onChange={(e) => set('organisme', e.target.value)} /></div>
       </div>
-      <div className="ink2">Aperçu : <strong>{participantMoe(v).nom}</strong> ({participantMoe(v).role})</div>
+      <div className="ink2">
+        Dans l’appel : <strong>{participantMoe(v).nom}</strong>{participantMoe(v).role ? ` (${participantMoe(v).role})` : ''}, puis <strong>{participantEntiteMoe(v).nom}</strong> (MOE, à pointer s’il est présent).
+      </div>
       <button type="button" className="btn sec block tap" onClick={enregistrer}>Enregistrer</button>
     </section>
   );

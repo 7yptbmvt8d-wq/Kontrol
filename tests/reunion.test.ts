@@ -16,7 +16,8 @@ describe('mode réunion', () => {
     const prec = { participants: [{ cle: 'x', nom: 'M. Rossi', role: 'MOA', presence: 'present' }], observations: [], numero: 1 } as unknown as Reunion;
     const r = nouvelleReunion(id, 2, d.intervenants, d.lots, prec, new Date('2026-11-08T09:30:00'));
     expect(r.participants.map((p) => `${p.nom}|${p.role}|${p.lotCode ?? ''}|${p.presence ?? ''}`)).toEqual([
-      'Représentant du MOE|Maîtrise d’œuvre||present',
+      'Représentant du MOE|||present',
+      'Maîtrise d’œuvre|MOE||',
       'Moretti GO|Titulaire|GO|', 'Étanchéité Corse Sud|Sous-traitant|GO|',
       'CVC Lanterna|Titulaire|CVC|', 'Calorifuge Méditerranée|Sous-traitant|CVC|',
       'M. Rossi|MOA||',
@@ -49,7 +50,7 @@ describe('mode réunion', () => {
     expect(c.reservesLevees).toEqual(['R-01 [GO] Fissure enduit']);
 
     const r = nouvelleReunion(1, 2, d.intervenants, d.lots, prec);
-    r.participants[1].presence = 'absent';
+    r.participants.find((p) => p.nom === 'Moretti GO')!.presence = 'absent';
     r.observations.push({ id: 'o1', lotCode: 'GO', texte: 'Transmettre la note de calcul', responsable: 'Entreprise', echeance: '2026-11-15', faite: false });
     r.prochaine = '2026-11-15';
     const t = compteRendu(r, d, prec);
@@ -63,14 +64,14 @@ describe('mode réunion', () => {
   });
 });
 
-describe('représentant du MOE', () => {
-  it('libellé selon le profil saisi dans les Réglages', async () => {
-    const { participantMoe } = await import('../src/domain/reunion');
-    expect(participantMoe()).toMatchObject({ nom: 'Représentant du MOE', role: 'Maîtrise d’œuvre', presence: 'present' });
-    expect(participantMoe({ nom: 'M. Deraedt', fonction: '', organisme: 'SID – BMO Corse' }))
-      .toMatchObject({ nom: 'M. Deraedt', role: 'Représentant du MOE – SID – BMO Corse' });
-    expect(participantMoe({ nom: '', fonction: 'Représentant du MOE', organisme: 'USID Corse' }))
-      .toMatchObject({ nom: 'Représentant du MOE', role: 'USID Corse' });
+describe('représentant du MOE et MOE', () => {
+  it('deux lignes : vous (présent) et l’organisme MOE (non pointé, absent du CR tant qu’il n’est pas pointé)', async () => {
+    const { participantMoe, participantEntiteMoe } = await import('../src/domain/reunion');
+    expect(participantMoe()).toMatchObject({ nom: 'Représentant du MOE', role: '', presence: 'present' });
+    const profil = { nom: 'M. Dupont', fonction: '', organisme: 'SID – BMO Corse' };
+    expect(participantMoe(profil)).toMatchObject({ nom: 'M. Dupont', role: 'Représentant du MOE', presence: 'present' });
+    expect(participantEntiteMoe(profil)).toEqual({ cle: 'moe-entite', nom: 'SID – BMO Corse', role: 'MOE' });
+    expect(participantEntiteMoe()).toMatchObject({ nom: 'Maîtrise d’œuvre', role: 'MOE' });
   });
 });
 

@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ClipboardCopy, Gavel, Pencil, Plus, Share2, Trash2, UserPlus, Users } from 'lucide-react';
-import { db } from '../db/schema';
+import { db, getReglage } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Observation, Participant, Presence, Reunion as TReunion, TypeReunion } from '../domain/types';
-import { PRESENCE, RESPONSABLES, TYPE_REUNION, changementsDepuis, compteRendu, nouvelId, pointsASuivre } from '../domain/reunion';
+import { CLE_ENTITE_MOE, PRESENCE, PROFIL_DEFAUT, RESPONSABLES, TYPE_REUNION, changementsDepuis, compteRendu, nouvelId, participantEntiteMoe, pointsASuivre, type Profil } from '../domain/reunion';
 import { ETAT_POINT, STATUT_RESERVE, refReserve, statutAffiche, bloquantNonValide } from '../domain/statuts';
 import { ajouterJours, aujourdHui, fmtCourt, fmtDate } from '../domain/dates';
 import { euros } from '../domain/penalites';
@@ -34,6 +34,17 @@ export function Reunion({ chantierId, rid }: { chantierId: number; rid: number }
   const setEtape = (e: Etape) => { etapes.set(rid, e); setEtapeEtat(e); window.scrollTo(0, 0); };
   const [infos, setInfos] = useState(false);
   const retourListe = () => retour('chantier', chantierId, 'reunions');
+  // Réunions créées avant l'ajout de la ligne « Maîtrise d'œuvre » : ajout (non pointée) sous le représentant du MOE
+  useEffect(() => {
+    const r = data?.r;
+    if (!r || r.cloturee || r.participants.some((p) => p.cle === CLE_ENTITE_MOE)) return;
+    void getReglage<Profil>('profil', PROFIL_DEFAUT).then((profil) => {
+      const i = Math.max(0, r.participants.findIndex((p) => p.cle === 'moe')) + 1;
+      const participants = [...r.participants];
+      participants.splice(i, 0, participantEntiteMoe(profil));
+      return db.reunions.update(rid, { participants });
+    });
+  }, [data?.r, rid]);
 
   if (data === undefined) return <main className="screen" />;
   if (data === null) return <main className="screen"><Header title="Réunion introuvable" onBack={retourListe} /></main>;
@@ -91,7 +102,7 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
     <div className="pad" style={{ marginTop: 12 }}>
       <div className="row" style={{ gap: 8 }}>
         <button type="button" className="btn sec tap" style={{ flex: '1 1 auto', height: 48, fontSize: 16 }}
-          onClick={() => maj({ participants: r.participants.map((p) => (p.presence ? p : { ...p, presence: 'present' })) })}>
+          onClick={() => maj({ participants: r.participants.map((p) => (p.presence || p.cle === CLE_ENTITE_MOE ? p : { ...p, presence: 'present' })) })}>
           <Check size={20} aria-hidden />Autres présents
         </button>
         <button type="button" className="btn sec tap" style={{ flex: '1 1 auto', height: 48, fontSize: 16 }} onClick={() => setAjout(true)}>
@@ -114,8 +125,8 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
                   <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}</div>
-                      <div className="ink2">{p.role}</div>
-                      {p.cle === 'moe' && !r.cloturee && <a href={lien('reglages')} className="tap" style={{ display: 'inline-block', minHeight: 32 }}>Vos nom et fonction (Réglages)</a>}
+                      {p.role && <div className="ink2">{p.role}</div>}
+                      {p.cle === 'moe' && !p.role && !r.cloturee && <a href={lien('reglages')} className="tap" style={{ display: 'inline-block', minHeight: 32 }}>Vos nom et fonction (Réglages)</a>}
                     </div>
                     <div className="presences" role="group" aria-label={`Présence de ${p.nom}`}>
                       {(['present', 'excuse', 'absent'] as Presence[]).map((v) => (

@@ -19,13 +19,18 @@ export const nouvelId = () => (crypto.randomUUID?.() ?? `${Date.now()}-${Math.ra
 export interface Profil { nom: string; fonction: string; organisme: string }
 export const PROFIL_DEFAUT: Profil = { nom: '', fonction: 'Représentant du MOE', organisme: '' };
 
-/** Ligne « représentant du MOE » de la liste d'appel (et du CR). */
+/** Ligne « vous », représentant du MOE (présent par défaut). */
 export function participantMoe(profil: Profil = PROFIL_DEFAUT): Participant {
   const fonction = profil.fonction.trim() || PROFIL_DEFAUT.fonction;
-  const organisme = profil.organisme.trim();
   return profil.nom.trim()
-    ? { cle: 'moe', nom: profil.nom.trim(), role: organisme ? `${fonction} – ${organisme}` : fonction, presence: 'present' }
-    : { cle: 'moe', nom: fonction, role: organisme || 'Maîtrise d’œuvre', presence: 'present' };
+    ? { cle: 'moe', nom: profil.nom.trim(), role: fonction, presence: 'present' }
+    : { cle: 'moe', nom: fonction, role: '', presence: 'present' };
+}
+
+export const CLE_ENTITE_MOE = 'moe-entite';
+/** Ligne « maîtrise d'œuvre » (l'organisme MOE lui-même), non pointée par défaut : pointée seulement s'il est présent. */
+export function participantEntiteMoe(profil: Profil = PROFIL_DEFAUT): Participant {
+  return { cle: CLE_ENTITE_MOE, nom: profil.organisme.trim() || 'Maîtrise d’œuvre', role: 'MOE' };
 }
 
 /** Participants : représentant du MOE, intervenants du chantier (par lot), participants libres de la réunion précédente. */
@@ -35,6 +40,7 @@ export function participantsInitiaux(intervenants: Intervenant[], lots: Lot[], p
     (ordreLot.get(a.lotCode ?? '') ?? 99) - (ordreLot.get(b.lotCode ?? '') ?? 99) || ORDRE_ROLE.indexOf(a.role) - ORDRE_ROLE.indexOf(b.role));
   const liste: Participant[] = [
     participantMoe(profil),
+    participantEntiteMoe(profil),
     ...tries.map((i) => ({ cle: `i${i.id}`, nom: i.raisonSociale, role: ROLE_INTERVENANT[i.role], lotCode: i.lotCode || undefined, intervenantId: i.id })),
   ];
   for (const p of precedente?.participants ?? []) {
@@ -120,12 +126,12 @@ export function compteRendu(r: Reunion, d: DonneesChantier, precedente?: Reunion
   L.push(`Avancement de la checklist : ${pourcentage(statistiques(d.points))} %`);
 
   titre('1. PRÉSENCES');
-  const nom = (p: Participant) => `${p.nom} (${p.role}${p.lotCode ? ` ${p.lotCode}` : ''})`;
+  const nom = (p: Participant) => (p.role || p.lotCode ? `${p.nom} (${[p.role, p.lotCode].filter(Boolean).join(' ')})` : p.nom);
   for (const [cle, lib] of [['present', 'Présents'], ['excuse', 'Excusés'], ['absent', 'Absents']] as const) {
     const ps = r.participants.filter((p) => p.presence === cle);
     L.push(`${lib} : ${ps.length ? ps.map(nom).join(' ; ') : '—'}`);
   }
-  const nonPointes = r.participants.filter((p) => !p.presence);
+  const nonPointes = r.participants.filter((p) => !p.presence && p.cle !== CLE_ENTITE_MOE); // MOE non pointé = non présent, non mentionné
   if (nonPointes.length) L.push(`Non pointés : ${nonPointes.map(nom).join(' ; ')}`);
 
   if (precedente) {
