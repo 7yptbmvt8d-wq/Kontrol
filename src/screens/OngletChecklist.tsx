@@ -13,6 +13,8 @@ import { EditionPoint } from './EditionPoint';
 
 /** Filtres mémorisés par chantier pendant la session (retour depuis un point). */
 const memoire = new Map<number, Filtres>();
+/** Ouverture de la checklist sur un filtre d'état (ex. depuis les compteurs de l'accueil). */
+export const filtrerChecklistSur = (chantierId: number, etat: FiltreEtat) => memoire.set(chantierId, { etat, lot: '', texte: '' });
 
 const FILTRES: { v: FiltreEtat; l: string; dot?: string }[] = [
   { v: 'tous', l: 'Tous' },

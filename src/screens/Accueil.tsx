@@ -8,6 +8,8 @@ import { BarreChecklist } from '../components/BarreChecklist';
 import { aller, lien } from '../router';
 import { Logo } from '../components/Logo';
 import { PuceDrive } from '../components/Drive';
+import { filtrerReservesSur } from './OngletReserves';
+import { filtrerChecklistSur } from './OngletChecklist';
 
 interface Compteurs { ouvertes: number; retard: number; bloquants: number; st: Stats }
 
@@ -30,9 +32,6 @@ export function Accueil() {
     return { chantiers, par };
   }, []);
 
-  const total = { ouvertes: 0, retard: 0, bloquants: 0 };
-  data?.par.forEach((k) => { total.ouvertes += k.ouvertes; total.retard += k.retard; total.bloquants += k.bloquants; });
-
   return (
     <main className="screen has-bar">
       <header className="pad row" style={{ justifyContent: 'space-between', paddingTop: 8 }}>
@@ -53,12 +52,6 @@ export function Accueil() {
         <h1 style={{ margin: '2px 0 0', fontSize: 'var(--fs-h1)', fontWeight: 700, letterSpacing: -0.5 }}>Mes chantiers</h1>
       </div>
 
-      <div className="pad" style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-        <Tuile n={total.ouvertes} libelle={total.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'} ton="b" />
-        <Tuile n={total.retard} libelle={total.retard > 1 ? 'réserves en retard' : 'réserve en retard'} ton="r" />
-        <Tuile n={total.bloquants} libelle={total.bloquants > 1 ? 'points bloquants' : 'point bloquant'} ton="r" />
-      </div>
-
       <div className="pad stack" style={{ paddingTop: 20, gap: 10 }}>
         {data && data.chantiers.length === 0 && (
           <div className="card empty">
@@ -68,21 +61,26 @@ export function Accueil() {
         {data?.chantiers.map((c) => {
           const k = data.par.get(c.id!)!;
           return (
-            <a key={c.id} href={lien('chantier', c.id!, 'checklist')} className="card card-link tap">
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="mono ink2" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.site || '—'}</span>
-                <span className="ink2">{PHASE_CHANTIER[c.phase]}</span>
+            <section key={c.id} className="card" style={{ padding: 0, overflow: 'hidden' }} aria-label={c.nom}>
+              <a href={lien('chantier', c.id!, 'checklist')} className="card-link tap" style={{ display: 'block', padding: '16px 16px 12px' }}>
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <span className="mono ink2" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.site || '—'}</span>
+                  <span className="ink2">{PHASE_CHANTIER[c.phase]}</span>
+                </div>
+                <div style={{ fontSize: 19, fontWeight: 600, lineHeight: 1.25, marginTop: 6 }}>{c.nom}</div>
+                <div style={{ marginTop: 12 }}>
+                  <BarreChecklist st={k.st} hauteur={8} />
+                </div>
+              </a>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, padding: '0 16px 16px' }}>
+                <Tuile n={k.ouvertes} libelle={k.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'} ton="b"
+                  onClick={() => { filtrerReservesSur(c.id!, 'non_levees'); aller('chantier', c.id!, 'reserves'); }} />
+                <Tuile n={k.retard} libelle={k.retard > 1 ? 'réserves en retard' : 'réserve en retard'} ton="r"
+                  onClick={() => { filtrerReservesSur(c.id!, 'en_retard'); aller('chantier', c.id!, 'reserves'); }} />
+                <Tuile n={k.bloquants} libelle={k.bloquants > 1 ? 'points bloquants' : 'point bloquant'} ton="r"
+                  onClick={() => { filtrerChecklistSur(c.id!, 'bloquants'); aller('chantier', c.id!, 'checklist'); }} />
               </div>
-              <div style={{ fontSize: 19, fontWeight: 600, lineHeight: 1.25, marginTop: 6 }}>{c.nom}</div>
-              <div style={{ marginTop: 12 }}>
-                <BarreChecklist st={k.st} hauteur={8} />
-              </div>
-              <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-                <span className={`chip ${k.ouvertes ? 't-b' : 't-n'}`}>{k.ouvertes} {k.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'}</span>
-                <span className={`chip ${k.retard ? 't-r' : 't-n'}`}>{k.retard} {k.retard > 1 ? 'réserves en retard' : 'réserve en retard'}</span>
-                <span className={`chip ${k.bloquants ? 't-r' : 't-n'}`}>{k.bloquants} {k.bloquants > 1 ? 'points bloquants' : 'point bloquant'}</span>
-              </div>
-            </a>
+            </section>
           );
         })}
       </div>
@@ -96,11 +94,14 @@ export function Accueil() {
   );
 }
 
-function Tuile({ n, libelle, ton }: { n: number; libelle: string; ton: 'b' | 'r' }) {
+/** Compteur d'un chantier (raccourci vers la liste correspondante) ; gris si zéro. */
+function Tuile({ n, libelle, ton, onClick }: { n: number; libelle: string; ton: 'b' | 'r'; onClick: () => void }) {
+  const t = n ? ton : 'n';
   return (
-    <div style={{ background: `var(--${ton}-bg)`, borderRadius: 14, padding: 12 }}>
-      <div className="mono" style={{ fontSize: 'var(--fs-kpi)', fontWeight: 600, color: `var(--${ton})`, lineHeight: 1 }}>{n}</div>
-      <div style={{ marginTop: 4 }}>{libelle}</div>
-    </div>
+    <button type="button" className="tap" onClick={onClick} aria-label={`${n} ${libelle}`}
+      style={{ background: `var(--${t}-bg)`, borderRadius: 14, padding: 10, border: 0, textAlign: 'left', minHeight: 48, color: 'var(--ink)' }}>
+      <span className="mono" style={{ display: 'block', fontSize: 26, fontWeight: 600, color: `var(--${t})`, lineHeight: 1 }}>{n}</span>
+      <span style={{ display: 'block', marginTop: 4, lineHeight: 1.2 }}>{libelle}</span>
+    </button>
   );
 }

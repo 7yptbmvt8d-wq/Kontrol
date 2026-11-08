@@ -134,6 +134,10 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
   `OngletChecklist`, `DetailPoint` (état en un toucher, commentaire auto-enregistré, photos), `EditionPoint`.
 
+- Accueil : **pas de compteurs globaux** (choix de l'utilisateur) ; chaque carte chantier porte ses 3 compteurs
+  (réserves ouvertes, réserves en retard, points bloquants), raccourcis vers Réserves « Non levées » / « Retard »
+  et Checklist « Bloquants » (`filtrerReservesSur`, `filtrerChecklistSur`).
+
 ## Fluidité (conventions)
 - Lectures réactives via `useLive(cle, requete, deps)` (`src/db/live.ts`) : affiche immédiatement le dernier
   résultat connu à la navigation, sans écran vide. Ne pas utiliser `useLiveQuery` directement dans les écrans.

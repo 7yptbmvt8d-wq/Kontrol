@@ -12,11 +12,15 @@ import { aller, lien } from '../router';
 
 const memoire = new Map<number, FiltresReserves>();
 /** Filtres actifs de l'onglet Réserves (repris par l'export « liste des réserves »). */
+/** Ouverture de l'onglet Réserves sur un statut (ex. depuis les compteurs de l'accueil). */
+export const filtrerReservesSur = (chantierId: number, statut: FiltreStatut) =>
+  memoire.set(chantierId, { ...filtresReserves(chantierId), statut, lot: '', entreprise: '' });
 export const filtresReserves = (chantierId: number): FiltresReserves =>
   memoire.get(chantierId) ?? { statut: 'toutes', lot: '', entreprise: '', tri: 'echeance' };
 
 const STATUTS: { v: FiltreStatut; l: string; dot?: string }[] = [
   { v: 'toutes', l: 'Toutes' },
+  { v: 'non_levees', l: 'Non levées' },
   { v: 'en_retard', l: 'Retard', dot: 'var(--r)' },
   { v: 'levee_a_verifier', l: 'À vérifier', dot: 'var(--o)' },
   { v: 'relance', l: 'Relancées', dot: 'var(--o)' },
