@@ -16,7 +16,7 @@ describe('mode réunion', () => {
     const prec = { participants: [{ cle: 'x', nom: 'M. Rossi', role: 'MOA', presence: 'present' }], observations: [], numero: 1 } as unknown as Reunion;
     const r = nouvelleReunion(id, 2, d.intervenants, d.lots, prec, new Date('2026-11-08T09:30:00'));
     expect(r.participants.map((p) => `${p.nom}|${p.role}|${p.lotCode ?? ''}|${p.presence ?? ''}`)).toEqual([
-      'Maîtrise d’œuvre|MOE||present',
+      'Représentant du MOE|Maîtrise d’œuvre||present',
       'Moretti GO|Titulaire|GO|', 'Étanchéité Corse Sud|Sous-traitant|GO|',
       'CVC Lanterna|Titulaire|CVC|', 'Calorifuge Méditerranée|Sous-traitant|CVC|',
       'M. Rossi|MOA||',
@@ -60,6 +60,17 @@ describe('mode réunion', () => {
     expect(t).toContain('- Transmettre la note de calcul — Entreprise — échéance 15/11/2026');
     expect(t).toContain('Réserves non levées (1) :');
     expect(t).toContain('Réunion de chantier le 15/11/2026.');
+  });
+});
+
+describe('représentant du MOE', () => {
+  it('libellé selon le profil saisi dans les Réglages', async () => {
+    const { participantMoe } = await import('../src/domain/reunion');
+    expect(participantMoe()).toMatchObject({ nom: 'Représentant du MOE', role: 'Maîtrise d’œuvre', presence: 'present' });
+    expect(participantMoe({ nom: 'M. Deraedt', fonction: '', organisme: 'SID – BMO Corse' }))
+      .toMatchObject({ nom: 'M. Deraedt', role: 'Représentant du MOE – SID – BMO Corse' });
+    expect(participantMoe({ nom: '', fonction: 'Représentant du MOE', organisme: 'USID Corse' }))
+      .toMatchObject({ nom: 'Représentant du MOE', role: 'USID Corse' });
   });
 });
 

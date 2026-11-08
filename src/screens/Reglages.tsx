@@ -5,7 +5,8 @@ import type { Contenu, Resume } from '../services/sauvegarde';
 import { fmtDate, fmtHeure } from '../domain/dates';
 import { Header, Segment, Sheet, toast } from '../components/ui';
 import { nouvelleVersionDisponible, rafraichir } from '../pwa/miseAJour';
-import { getReglage, setReglage } from '../db/schema';
+import { db, getReglage, setReglage } from '../db/schema';
+import { PROFIL_DEFAUT, participantMoe, type Profil } from '../domain/reunion';
 import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
 import { SectionDrive } from './SectionDrive';
@@ -53,6 +54,7 @@ export function Reglages() {
             Stockage persistant : {persist === null ? 'inconnu' : persist ? 'accordé' : 'non accordé (l’app s’installe sur l’écran d’accueil pour l’obtenir)'}
           </div>
         </section>
+        <SectionProfil />
         <SectionDrive onRestaurer={(blob, nom) => void lireFichier(blob, nom)} />
         <section className="card stack" style={{ gap: 10 }} aria-label="Sauvegarde et restauration">
           <h2 className="sec-title">Sauvegarde sur le téléphone</h2>
@@ -114,5 +116,38 @@ export function Reglages() {
         </Sheet>
       )}
     </main>
+  );
+}
+
+/** Vous, en réunion : nom, fonction, organisme — repris dans la liste d'appel et le compte rendu. */
+function SectionProfil() {
+  const [v, setV] = useState<Profil | null>(null);
+  useEffect(() => { getReglage<Profil>('profil', PROFIL_DEFAUT).then((p) => setV({ ...PROFIL_DEFAUT, ...p })); }, []);
+  if (!v) return null;
+  const set = (k: keyof Profil, val: string) => setV((o) => ({ ...o!, [k]: val }));
+  const enregistrer = async () => {
+    await setReglage('profil', v);
+    // Réunions en cours : mise à jour de la ligne du représentant du MOE (présence conservée)
+    const moe = participantMoe(v);
+    await db.reunions.filter((r) => !r.cloturee).modify((r) => {
+      r.participants = r.participants.map((p) => (p.cle === 'moe' ? { ...moe, presence: p.presence } : p));
+    });
+    toast('Enregistré');
+  };
+  return (
+    <section className="card stack" style={{ gap: 10 }} aria-label="Vous">
+      <h2 className="sec-title">Vous</h2>
+      <div className="ink2">Repris en tête de la liste d’appel des réunions et dans le compte rendu.</div>
+      <div>
+        <div className="frow"><label className="rl" htmlFor="pf-nom">Nom</label>
+          <input id="pf-nom" value={v.nom} placeholder="ex. M. Dupont" autoComplete="name" onChange={(e) => set('nom', e.target.value)} /></div>
+        <div className="frow"><label className="rl" htmlFor="pf-fct">Fonction</label>
+          <input id="pf-fct" value={v.fonction} placeholder="Représentant du MOE" onChange={(e) => set('fonction', e.target.value)} /></div>
+        <div className="frow" style={{ borderBottom: 0 }}><label className="rl" htmlFor="pf-org">Organisme</label>
+          <input id="pf-org" value={v.organisme} placeholder="ex. SID – USID de Corse" onChange={(e) => set('organisme', e.target.value)} /></div>
+      </div>
+      <div className="ink2">Aperçu : <strong>{participantMoe(v).nom}</strong> ({participantMoe(v).role})</div>
+      <button type="button" className="btn sec block tap" onClick={enregistrer}>Enregistrer</button>
+    </section>
   );
 }

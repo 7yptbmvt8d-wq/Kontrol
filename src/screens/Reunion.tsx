@@ -11,7 +11,7 @@ import { CodeLot, Header, Pastille, Segment, Sheet, toast } from '../components/
 import { BoutonDictee } from '../components/Dictee';
 import { chargerChantier, horodatage, nomFichier } from '../services/exports/donnees';
 import { partager, TYPES } from '../services/exports/partage';
-import { aller, retour } from '../router';
+import { aller, lien, retour } from '../router';
 import { SaisieReserve } from './SaisieReserve';
 import { SaisiePenalite } from './SaisiePenalite';
 
@@ -115,6 +115,7 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}</div>
                       <div className="ink2">{p.role}</div>
+                      {p.cle === 'moe' && !r.cloturee && <a href={lien('reglages')} className="tap" style={{ display: 'inline-block', minHeight: 32 }}>Vos nom et fonction (Réglages)</a>}
                     </div>
                     <div className="presences" role="group" aria-label={`Présence de ${p.nom}`}>
                       {(['present', 'excuse', 'absent'] as Presence[]).map((v) => (

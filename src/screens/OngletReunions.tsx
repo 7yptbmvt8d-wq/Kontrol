@@ -1,8 +1,8 @@
 import { CalendarPlus, ChevronRight } from 'lucide-react';
-import { db } from '../db/schema';
+import { db, getReglage } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Chantier } from '../domain/types';
-import { TYPE_REUNION, nouvelleReunion } from '../domain/reunion';
+import { PROFIL_DEFAUT, TYPE_REUNION, nouvelleReunion, type Profil } from '../domain/reunion';
 import { fmtDate } from '../domain/dates';
 import { Pastille, toast } from '../components/ui';
 import { aller } from '../router';
@@ -18,7 +18,8 @@ export function OngletReunions({ chantier: ch }: { chantier: Chantier }) {
       db.reunions.where('chantierId').equals(id).sortBy('numero'),
     ]);
     const precedente = toutes.at(-1);
-    const r = nouvelleReunion(id, (precedente?.numero ?? 0) + 1, intervenants, lots, precedente);
+    const profil = await getReglage<Profil>('profil', PROFIL_DEFAUT);
+    const r = nouvelleReunion(id, (precedente?.numero ?? 0) + 1, intervenants, lots, precedente, new Date(), profil);
     const rid = (await db.reunions.add(r)) as number;
     if (r.observations.length) toast(`${r.observations.length} action(s) non soldée(s) reprise(s) de la réunion n°${precedente!.numero}`);
     aller('chantier', id, 'reunion', rid);

@@ -15,13 +15,26 @@ export const RESPONSABLES = ['Entreprise', 'MOE', 'MOA', 'Contrôleur technique'
 const ORDRE_ROLE = ['titulaire', 'sous_traitant', 'moa', 'controleur_technique', 'csps', 'autre'];
 export const nouvelId = () => (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).slice(0, 12);
 
-/** Participants : maîtrise d'œuvre, intervenants du chantier (par lot), participants libres de la réunion précédente. */
-export function participantsInitiaux(intervenants: Intervenant[], lots: Lot[], precedente?: Reunion): Participant[] {
+/** Vous, en réunion (Réglages › Vous) : nom, fonction, organisme de maîtrise d'œuvre. */
+export interface Profil { nom: string; fonction: string; organisme: string }
+export const PROFIL_DEFAUT: Profil = { nom: '', fonction: 'Représentant du MOE', organisme: '' };
+
+/** Ligne « représentant du MOE » de la liste d'appel (et du CR). */
+export function participantMoe(profil: Profil = PROFIL_DEFAUT): Participant {
+  const fonction = profil.fonction.trim() || PROFIL_DEFAUT.fonction;
+  const organisme = profil.organisme.trim();
+  return profil.nom.trim()
+    ? { cle: 'moe', nom: profil.nom.trim(), role: organisme ? `${fonction} – ${organisme}` : fonction, presence: 'present' }
+    : { cle: 'moe', nom: fonction, role: organisme || 'Maîtrise d’œuvre', presence: 'present' };
+}
+
+/** Participants : représentant du MOE, intervenants du chantier (par lot), participants libres de la réunion précédente. */
+export function participantsInitiaux(intervenants: Intervenant[], lots: Lot[], precedente?: Reunion, profil?: Profil): Participant[] {
   const ordreLot = new Map(lots.map((l, i) => [l.code, i]));
   const tries = [...intervenants].sort((a, b) =>
     (ordreLot.get(a.lotCode ?? '') ?? 99) - (ordreLot.get(b.lotCode ?? '') ?? 99) || ORDRE_ROLE.indexOf(a.role) - ORDRE_ROLE.indexOf(b.role));
   const liste: Participant[] = [
-    { cle: 'moe', nom: 'Maîtrise d’œuvre', role: 'MOE', presence: 'present' },
+    participantMoe(profil),
     ...tries.map((i) => ({ cle: `i${i.id}`, nom: i.raisonSociale, role: ROLE_INTERVENANT[i.role], lotCode: i.lotCode || undefined, intervenantId: i.id })),
   ];
   for (const p of precedente?.participants ?? []) {
@@ -38,10 +51,10 @@ export function actionsReprises(precedente?: Reunion): Observation[] {
 }
 
 export function nouvelleReunion(chantierId: number, numero: number, intervenants: Intervenant[], lots: Lot[], precedente?: Reunion,
-  maintenant = new Date()): Reunion {
+  maintenant = new Date(), profil?: Profil): Reunion {
   return {
     chantierId, numero, date: jourLocal(maintenant.toISOString()), heure: fmtHeure(maintenant.toISOString()),
-    type: 'chantier', lieu: precedente?.lieu ?? '', participants: participantsInitiaux(intervenants, lots, precedente),
+    type: 'chantier', lieu: precedente?.lieu ?? '', participants: participantsInitiaux(intervenants, lots, precedente, profil),
     observations: actionsReprises(precedente), cloturee: false, creeLe: maintenant.toISOString(),
   };
 }

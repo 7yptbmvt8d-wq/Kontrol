@@ -125,6 +125,8 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   précédente), `compteRendu` (texte pour Claude). Accès : onglet Intervenants › sélecteur Intervenants / Réunions
   (route `reunions`) ; écran `Reunion` (route `reunion/<id>`) en 3 étapes Appel / Déroulé / CR.
   Absence d'un titulaire → pénalité d'absence pré-remplie (article du barème contenant « absen »).
+  1re ligne de l'appel = l'utilisateur, **représentant du MOE** (`participantMoe`, profil Réglages › Vous : nom,
+  fonction — défaut « Représentant du MOE » —, organisme ; enregistrer met à jour les réunions non clôturées).
 - Photos : deux entrées (`EntreesPhotos`) — appareil photo direct (`capture`) et photothèque (sans `capture`,
   sélection multiple) : sur iPhone, `capture` empêche de choisir dans la photothèque.
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),
