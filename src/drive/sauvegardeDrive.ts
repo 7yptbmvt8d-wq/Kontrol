@@ -1,13 +1,14 @@
 // Sauvegarde Google Drive, dans le dossier « Kontrol » :
-// - Sauvegardes / : même archive ZIP que la sauvegarde locale (restauration), 10 dernières conservées ;
+// - Sauvegardes / : même archive ZIP que la sauvegarde locale (restauration), 5 dernières conservées ;
 // - <chantier> / : rapport PDF, classeur Excel et Photos / à jour (dossiersChantiers.ts).
 // Automatique à l'ouverture si la dernière a plus de 24 h (et que des données ont changé).
 import { useSyncExternalStore } from 'react';
 import { connecter, jetonValide, oublierJeton, retourOAuth } from './oauth';
 import { ErreurDrive, compte, dossier, dossierSauvegardes, lister, supprimer, telecharger, televerser, type FichierDrive } from './api';
 import { derniereModification } from '../db/suivi';
+import { nomSauvegarde } from './nommage';
 
-export const CONSERVER = 10;
+export const CONSERVER = 5;
 const DELAI_AUTO = 24 * 3600_000;
 const CLE = 'kontrol-drive';
 
@@ -49,11 +50,6 @@ export const enAttente = (c = config) => !c.derniere || derniereModification() >
 export const connecte = (c = config) => !!c.email;
 
 // ---------- Opérations ----------
-const horodatage = () => {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
-};
 
 /** Obtient un jeton : celui en cours, sinon redirection vers Google (l'action reprend au retour). */
 function jetonOuConnexion(intention: ConfigDrive['intention']): string | null {
@@ -91,9 +87,9 @@ export function sauvegarderMaintenant(): Promise<void> {
         const { creerSauvegarde } = await import('../services/sauvegarde');
         const debut = new Date();
         const { blob, resume } = await creerSauvegarde((x) => majEtat({ progres: x * 0.25 }));
-        const nom = `Kontrol-sauvegarde-${horodatage()}.zip`;
+        const nom = nomSauvegarde(debut);
         await televerser(jeton, idSauvegardes, nom, blob, (x) => majEtat({ progres: 0.25 + x * 0.35 }));
-        // Conservation des 10 dernières
+        // Conservation des 5 dernières (les plus anciennes sont supprimées)
         const fichiers = await lister(jeton, idSauvegardes);
         for (const f of fichiers.slice(CONSERVER)) await supprimer(jeton, f.id).catch(() => {});
         majConfig({

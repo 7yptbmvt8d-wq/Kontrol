@@ -31,3 +31,16 @@ export function photosAttendues(reserves: Reserve[], points: PointControle[]): P
   }
   return sortie;
 }
+
+const deux = (n: number) => String(n).padStart(2, '0');
+
+/** Nom d'une sauvegarde ZIP : « Kontrol – sauvegarde du 08-11-2026 à 09h45.zip » (heure du téléphone). */
+export function nomSauvegarde(d = new Date()): string {
+  return `Kontrol – sauvegarde du ${deux(d.getDate())}-${deux(d.getMonth() + 1)}-${d.getFullYear()} à ${deux(d.getHours())}h${deux(d.getMinutes())}.zip`;
+}
+
+/** Ancien nom « Kontrol-sauvegarde-20261108-0945.zip » → nouveau nom ; null si le nom n'est pas de l'ancien format. */
+export function renommageSauvegarde(nom: string): string | null {
+  const m = /^Kontrol-sauvegarde-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})\.zip$/.exec(nom);
+  return m ? `Kontrol – sauvegarde du ${m[3]}-${m[2]}-${m[1]} à ${m[4]}h${m[5]}.zip` : null;
+}

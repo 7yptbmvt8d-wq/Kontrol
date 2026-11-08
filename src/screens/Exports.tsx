@@ -11,6 +11,7 @@ import { filtresReserves } from './OngletReserves';
 import { retour } from '../router';
 import { euros } from '../domain/penalites';
 import { CarteDrive } from '../components/Drive';
+import { nomSauvegarde } from '../drive/nommage';
 
 type Format = 'pdf' | 'xlsx';
 interface Pret { titre: string; fichiers: FichierPret[] }
@@ -108,7 +109,7 @@ export function Exports({ chantierId }: { chantierId: number }) {
   const sauvegarder = () => lancer('zip', 'Sauvegarde complète', async () => {
     const { creerSauvegarde } = await import('../services/sauvegarde');
     const { blob } = await creerSauvegarde(setProgres);
-    return [{ nom: `Kontrol-sauvegarde-${horodatage()}.zip`, blob }];
+    return [{ nom: nomSauvegarde(), blob }];
   });
 
   const Formats = ({ quoi, pdf = true }: { quoi: 'liste' | 'entreprises' | 'jalons' | 'penalites' | 'nonSoldes'; pdf?: boolean }) => (

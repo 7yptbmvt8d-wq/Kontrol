@@ -23,3 +23,12 @@ describe('nommage Drive', () => {
     ]);
   });
 });
+
+describe('nom des sauvegardes', () => {
+  it('date lisible, sans caractère interdit', async () => {
+    const { nomSauvegarde, renommageSauvegarde } = await import('../src/drive/nommage');
+    expect(nomSauvegarde(new Date(2026, 10, 8, 9, 5))).toBe('Kontrol – sauvegarde du 08-11-2026 à 09h05.zip');
+    expect(renommageSauvegarde('Kontrol-sauvegarde-20261108-0945.zip')).toBe('Kontrol – sauvegarde du 08-11-2026 à 09h45.zip');
+    expect(renommageSauvegarde('Kontrol – sauvegarde du 08-11-2026 à 09h45.zip')).toBeNull();
+  });
+});

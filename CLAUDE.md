@@ -105,11 +105,12 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   les pop-ups ne reviennent pas à une PWA iOS ; portée `drive.file` seule ; jeton 1 h en localStorage ;
   importé EN PREMIER dans main.tsx pour retirer le jeton de l'URL avant le routeur hash ; `state` vérifié),
   `api.ts` (REST Drive v3 : dossier « Kontrol », envoi reprenable avec progression, liste, suppression, téléchargement),
-  `sauvegardeDrive.ts` (état partagé `useDrive`, sauvegarde = même ZIP que la sauvegarde locale, 10 conservées,
+  `sauvegardeDrive.ts` (état partagé `useDrive`, sauvegarde = même ZIP que la sauvegarde locale, 5 conservées,
   automatique à l'ouverture si > 24 h et données modifiées ; jeton expiré → reconnexion silencieuse `prompt=none`
   au plus toutes les 6 h ; refus → pastille « Reconnecter » ; l'action demandée reprend au retour de Google).
   `src/db/suivi.ts` : crochets Dexie → date de dernière modification (« En attente »).
-  Arborescence Drive : `Kontrol / Sauvegardes /` (ZIP, 10 conservées ; les ZIP de l'ancienne racine y sont déplacés) et
+  Arborescence Drive : `Kontrol / Sauvegardes /` (ZIP « Kontrol – sauvegarde du JJ-MM-AAAA à HHhMM.zip »,
+  5 conservées ; les ZIP de l'ancienne racine y sont déplacés et renommés) et
   `Kontrol / <chantier> /` (`drive/dossiersChantiers.ts`, mis à jour à chaque sauvegarde) : `Rapport – <chantier>.pdf`
   (`pdfRapport` : synthèse, checklist, réserves sans photos, jalons, pénalités), `Suivi – <chantier>.xlsx` (`xlsxSuivi`),
   `Photos /` (nommées par réserve / point, `drive/nommage.ts` testé ; seules les nouvelles sont envoyées ; renommées si

@@ -1,4 +1,5 @@
 // Appels REST Google Drive v3 (sans bibliothèque). Portée drive.file : l'app ne voit que ses propres fichiers.
+import { renommageSauvegarde } from './nommage';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -183,5 +184,10 @@ export async function dossierSauvegardes(jeton: string, racine: string): Promise
   const id = (await sousDossier(jeton, racine, 'Sauvegardes', { kontrol: 'sauvegardes' }))!;
   const anciennes = await listerDossier(jeton, racine, `mimeType='application/zip'`);
   for (const f of anciennes) await deplacer(jeton, f.id, racine, id);
+  // Noms des versions précédentes (« Kontrol-sauvegarde-20261108-0945.zip ») → nom lisible avec la date
+  for (const f of await listerDossier(jeton, id, `mimeType='application/zip' and name contains 'Kontrol-sauvegarde-'`)) {
+    const nom = renommageSauvegarde(f.name);
+    if (nom) await renommer(jeton, f.id, nom);
+  }
   return id;
 }
