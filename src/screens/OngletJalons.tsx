@@ -74,20 +74,21 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
           <ol className="tl" style={{ marginTop: 14 }} aria-label="Frise des jalons">
             {lignes.map(({ j, ctx, date, st }) => {
               const t = TON[st];
-              const an = date && date.slice(0, 4) !== today.slice(0, 4) ? date.slice(0, 4) + ' · ' : '';
               let sous: string;
               if (st === 'fait') sous = `Fait le ${fmtDate(j.dateRealisee)}`;
               else if (st === 'en_retard') sous = `En retard · +${ecartJours(date!, today)} j`;
               else if (st === 'a_venir') {
                 const n = ecartJours(today, date!);
-                sous = `${an}${calculJalon(j, ctx)} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
+                sous = `${calculJalon(j, ctx)} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
               } else sous = j.reference === 'autre' ? `Date à saisir${j.jours ? ` · délai ${j.jours} j` : ''}`
                 : !ctx.dateOS ? 'Date d’OS à saisir'
                 : j.reference === 'fin_preparation' ? 'Durée de la période de préparation à saisir'
                 : 'Délai d’exécution inconnu';
               return (
                 <li key={j.uid}>
-                  <div className="tl-date" style={{ color: t.date }}>{fmtCourt(date)}</div>
+                  <div className="tl-date" style={{ color: t.date }}>
+                    {fmtCourt(date)}{date && <span className="tl-an">{date.slice(0, 4)}</span>}
+                  </div>
                   <div className="tl-rail" aria-hidden>
                     <span className="tl-dot" style={{ background: t.dot }} />
                     <span className="tl-line" />
