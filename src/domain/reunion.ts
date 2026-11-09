@@ -15,9 +15,12 @@ export const RESPONSABLES = ['Entreprise', 'MOE', 'MOA', 'Contrôleur technique'
 const ORDRE_ROLE = ['titulaire', 'sous_traitant', 'moa', 'controleur_technique', 'csps', 'autre'];
 export const nouvelId = () => (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).slice(0, 12);
 
-/** Vous, en réunion (Réglages › Vous) : nom, fonction, organisme de maîtrise d'œuvre. */
-export interface Profil { nom: string; fonction: string; organisme: string }
-export const PROFIL_DEFAUT: Profil = { nom: '', fonction: 'Représentant du MOE', organisme: '' };
+/**
+ * Profil (Réglages › Vous) : vous (nom, fonction : représentant du MOE) et la maîtrise d'œuvre
+ * (organisme, et la personne qui la représente quand elle assiste : nom, fonction).
+ */
+export interface Profil { nom: string; fonction: string; organisme: string; moeNom?: string; moeFonction?: string }
+export const PROFIL_DEFAUT: Profil = { nom: '', fonction: 'Représentant du MOE', organisme: '', moeNom: '', moeFonction: '' };
 
 /** Ligne « vous », représentant du MOE (présent par défaut). */
 export function participantMoe(profil: Profil = PROFIL_DEFAUT): Participant {
@@ -30,7 +33,10 @@ export function participantMoe(profil: Profil = PROFIL_DEFAUT): Participant {
 export const CLE_ENTITE_MOE = 'moe-entite';
 /** Ligne « maîtrise d'œuvre » (l'organisme MOE lui-même), non pointée par défaut : pointée seulement s'il est présent. */
 export function participantEntiteMoe(profil: Profil = PROFIL_DEFAUT): Participant {
-  return { cle: CLE_ENTITE_MOE, nom: profil.organisme.trim() || 'Maîtrise d’œuvre', role: 'MOE' };
+  const org = profil.organisme.trim();
+  const nom = (profil.moeNom ?? '').trim();
+  if (!nom) return { cle: CLE_ENTITE_MOE, nom: org || 'Maîtrise d’œuvre', role: 'MOE' };
+  return { cle: CLE_ENTITE_MOE, nom, role: [(profil.moeFonction ?? '').trim(), org ? `${org} (MOE)` : 'MOE'].filter(Boolean).join(' · ') };
 }
 
 /** Participants : représentant du MOE, intervenants du chantier (par lot), participants libres de la réunion précédente. */
@@ -44,7 +50,7 @@ export function participantsInitiaux(intervenants: Intervenant[], lots: Lot[], p
     ...tries.map((i) => ({ cle: `i${i.id}`, nom: i.raisonSociale, role: ROLE_INTERVENANT[i.role], lotCode: i.lotCode || undefined, intervenantId: i.id })),
   ];
   for (const p of precedente?.participants ?? []) {
-    if (!p.intervenantId && p.cle !== 'moe' && !liste.some((x) => x.nom === p.nom)) liste.push({ ...p, presence: undefined });
+    if (!p.intervenantId && p.cle !== 'moe' && p.cle !== CLE_ENTITE_MOE && !liste.some((x) => x.nom === p.nom)) liste.push({ ...p, presence: undefined });
   }
   return liste;
 }

@@ -15,6 +15,7 @@ import { aller, retour } from '../router';
 import { SaisieReserve } from './SaisieReserve';
 import { SaisiePenalite } from './SaisiePenalite';
 import { enregistrerProfil, lireProfil } from '../services/profil';
+import { ChampsProfil } from '../components/Profil';
 
 type Etape = 'presences' | 'deroule' | 'cr';
 const etapes = new Map<number, Etape>();
@@ -182,20 +183,13 @@ function FicheMoe({ cloturee, onClose }: { cloturee: boolean; onClose: () => voi
   if (!v) return null;
   const set = (k: keyof Profil, val: string) => setV((o) => ({ ...o!, [k]: val }));
   return (
-    <Sheet titre="Maîtrise d’œuvre" sousTitre="Vous et l’organisme MOE" onClose={onClose} auto
+    <Sheet titre="Maîtrise d’œuvre" sousTitre="Vous et la maîtrise d’œuvre" onClose={onClose} auto
       pied={<button type="button" className="btn block tap" onClick={async () => {
         await enregistrerProfil(v);
         toast('Enregistré');
         onClose();
       }}>Enregistrer</button>}>
-      <div>
-        <div className="frow"><label className="rl" htmlFor="fm-nom">Votre nom</label>
-          <input id="fm-nom" value={v.nom} placeholder="ex. M. Dupont" autoComplete="name" onChange={(e) => set('nom', e.target.value)} /></div>
-        <div className="frow"><label className="rl" htmlFor="fm-fct">Fonction</label>
-          <input id="fm-fct" value={v.fonction} placeholder="Représentant du MOE" onChange={(e) => set('fonction', e.target.value)} /></div>
-        <div className="frow" style={{ borderBottom: 0 }}><label className="rl" htmlFor="fm-org">Organisme MOE</label>
-          <input id="fm-org" value={v.organisme} placeholder="ex. SID – USID de Corse" onChange={(e) => set('organisme', e.target.value)} /></div>
-      </div>
+      <ChampsProfil v={v} set={set} />
       <div className="ink2" style={{ marginTop: 10 }}>
         Repris dans toutes les réunions non clôturées et dans Réglages › Vous.{cloturee ? ' Cette réunion est clôturée : rouvrez-la pour y reporter la modification.' : ''}
       </div>

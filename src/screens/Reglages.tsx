@@ -11,6 +11,7 @@ import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
 import { SectionDrive } from './SectionDrive';
 import { enregistrerProfil, lireProfil } from '../services/profil';
+import { ChampsProfil } from '../components/Profil';
 
 export function Reglages() {
   const [theme, setTheme] = useState<Theme>('sombre');
@@ -134,16 +135,10 @@ function SectionProfil() {
     <section className="card stack" style={{ gap: 10 }} aria-label="Vous">
       <h2 className="sec-title">Vous</h2>
       <div className="ink2">Repris en tête de la liste d’appel des réunions et dans le compte rendu.</div>
-      <div>
-        <div className="frow"><label className="rl" htmlFor="pf-nom">Nom</label>
-          <input id="pf-nom" value={v.nom} placeholder="ex. M. Dupont" autoComplete="name" onChange={(e) => set('nom', e.target.value)} /></div>
-        <div className="frow"><label className="rl" htmlFor="pf-fct">Fonction</label>
-          <input id="pf-fct" value={v.fonction} placeholder="Représentant du MOE" onChange={(e) => set('fonction', e.target.value)} /></div>
-        <div className="frow" style={{ borderBottom: 0 }}><label className="rl" htmlFor="pf-org">Organisme</label>
-          <input id="pf-org" value={v.organisme} placeholder="ex. SID – USID de Corse (nom du MOE)" onChange={(e) => set('organisme', e.target.value)} /></div>
-      </div>
+      <ChampsProfil v={v} set={set} />
       <div className="ink2">
-        Dans l’appel : <strong>{participantMoe(v).nom}</strong>{participantMoe(v).role ? ` (${participantMoe(v).role})` : ''}, puis <strong>{participantEntiteMoe(v).nom}</strong> (MOE, à pointer s’il est présent).
+        Dans l’appel : <strong>{participantMoe(v).nom}</strong>{participantMoe(v).role ? ` (${participantMoe(v).role})` : ''},
+        puis <strong>{participantEntiteMoe(v).nom}</strong> ({participantEntiteMoe(v).role}, à pointer s’il est présent).
       </div>
       <button type="button" className="btn sec block tap" onClick={enregistrer}>Enregistrer</button>
     </section>

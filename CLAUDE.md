@@ -148,7 +148,8 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   Absence d'un titulaire → pénalité d'absence pré-remplie (article du barème contenant « absen »).
   En tête de l'appel : l'utilisateur, **représentant du MOE** (`participantMoe`, présent par défaut) puis l'organisme
   **MOE** (`participantEntiteMoe`, non pointé par défaut : ignoré par « Autres présents » et absent du CR tant qu'il
-  n'est pas pointé). Profil Réglages › Vous : nom, fonction (défaut « Représentant du MOE »), organisme (= nom du MOE) ;
+  n'est pas pointé). Profil Réglages › Vous (`components/Profil.tsx`) : vous (nom, fonction, défaut « Représentant du MOE »),
+  maîtrise d'œuvre (organisme ; nom et fonction facultatifs de son représentant → ligne MOE « nom · fonction · organisme (MOE) ») ;
   enregistrer met à jour les réunions non clôturées. Autres participants : touchés dans l'appel → `FicheParticipant`
   (nom, rôle, lot, retrait de la liste) ; un participant issu d'un intervenant n'est modifié que pour la réunion.
   Lignes MOE touchées → `FicheMoe` (profil, `services/profil.ts` `enregistrerProfil` partagé avec Réglages).

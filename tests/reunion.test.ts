@@ -72,6 +72,9 @@ describe('représentant du MOE et MOE', () => {
     expect(participantMoe(profil)).toMatchObject({ nom: 'M. Dupont', role: 'Représentant du MOE', presence: 'present' });
     expect(participantEntiteMoe(profil)).toEqual({ cle: 'moe-entite', nom: 'SID – BMO Corse', role: 'MOE' });
     expect(participantEntiteMoe()).toMatchObject({ nom: 'Maîtrise d’œuvre', role: 'MOE' });
+    // Représentant de la maîtrise d'œuvre nommé : son nom, sa fonction et l'organisme
+    expect(participantEntiteMoe({ ...profil, moeNom: 'M. Martin', moeFonction: 'Chef de BMO' }))
+      .toEqual({ cle: 'moe-entite', nom: 'M. Martin', role: 'Chef de BMO · SID – BMO Corse (MOE)' });
   });
 });
 
