@@ -149,7 +149,8 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
   En tête de l'appel : l'utilisateur, **représentant du MOE** (`participantMoe`, présent par défaut) puis l'organisme
   **MOE** (`participantEntiteMoe`, non pointé par défaut : ignoré par « Autres présents » et absent du CR tant qu'il
   n'est pas pointé). Profil Réglages › Vous : nom, fonction (défaut « Représentant du MOE »), organisme (= nom du MOE) ;
-  enregistrer met à jour les réunions non clôturées.
+  enregistrer met à jour les réunions non clôturées. Autres participants : touchés dans l'appel → `FicheParticipant`
+  (nom, rôle, lot, retrait de la liste) ; un participant issu d'un intervenant n'est modifié que pour la réunion.
 - Photos : deux entrées (`EntreesPhotos`) — appareil photo direct (`capture`) et photothèque (sans `capture`,
   sélection multiple) : sur iPhone, `capture` empêche de choisir dans la photothèque.
 - Checklist : `src/domain/checklist.ts` (filtres, groupes, stats, parcours précédent/suivant),

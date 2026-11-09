@@ -86,7 +86,7 @@ type D = Awaited<ReturnType<typeof chargerChantier>>;
 
 // ---------------------------------------------------------------- Présences
 function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
-  const [ajout, setAjout] = useState(false);
+  const [fiche, setFiche] = useState<{ p?: Participant } | null>(null); // ajout (p absent) ou modification
   const [penalite, setPenalite] = useState<Participant | null>(null);
   const pointer = (cle: string, presence: Presence) =>
     maj({ participants: r.participants.map((p) => (p.cle === cle ? { ...p, presence: p.presence === presence ? undefined : presence } : p)) });
@@ -105,7 +105,7 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
           onClick={() => maj({ participants: r.participants.map((p) => (p.presence || p.cle === CLE_ENTITE_MOE ? p : { ...p, presence: 'present' })) })}>
           <Check size={20} aria-hidden />Autres présents
         </button>
-        <button type="button" className="btn sec tap" style={{ flex: '1 1 auto', height: 48, fontSize: 16 }} onClick={() => setAjout(true)}>
+        <button type="button" className="btn sec tap" style={{ flex: '1 1 auto', height: 48, fontSize: 16 }} onClick={() => setFiche({})}>
           <UserPlus size={20} aria-hidden />Participant
         </button>
       </div>
@@ -123,11 +123,18 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
               return (
                 <div key={p.cle} style={{ borderTop: '1px solid var(--line)', padding: '8px 10px 8px 14px' }}>
                   <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}</div>
-                      {p.role && <div className="ink2">{p.role}</div>}
-                      {p.cle === 'moe' && !p.role && !r.cloturee && <a href={lien('reglages')} className="tap" style={{ display: 'inline-block', minHeight: 32 }}>Vos nom et fonction (Réglages)</a>}
-                    </div>
+                    {p.cle === 'moe' || p.cle === CLE_ENTITE_MOE ? (
+                      // Représentant du MOE et MOE : repris du profil (Réglages › Vous)
+                      <a href={lien('reglages')} className="tap participant" aria-label={`${p.nom} : modifier dans Réglages › Vous`}>
+                        <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}</span>
+                        <span className="ink2">{p.role || (p.cle === 'moe' ? 'Vos nom et fonction : Réglages' : '')}</span>
+                      </a>
+                    ) : (
+                      <button type="button" className="tap participant" aria-label={`Modifier ${p.nom}`} onClick={() => setFiche({ p })}>
+                        <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}<Pencil size={16} strokeWidth={2.2} color="var(--accent)" aria-hidden style={{ marginLeft: 6, verticalAlign: '-2px' }} /></span>
+                        {p.role && <span className="ink2">{p.role}</span>}
+                      </button>
+                    )}
                     <div className="presences" role="group" aria-label={`Présence de ${p.nom}`}>
                       {(['present', 'excuse', 'absent'] as Presence[]).map((v) => (
                         <button key={v} type="button" className={`tap${p.presence === v ? ` t-${v === 'present' ? 'g' : v === 'excuse' ? 'o' : 'r'}` : ''}`}
@@ -152,8 +159,9 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
       </div>
       <div className="ink2" style={{ marginTop: 8 }}>P = présent · E = excusé · A = absent. Toucher à nouveau pour effacer.</div>
       <div style={{ height: 24 }} />
-      {ajout && <AjoutParticipant lots={d.lots.map((l) => l.code)} onClose={() => setAjout(false)}
-        onAjout={(p) => maj({ participants: [...r.participants, p] })} />}
+      {fiche && <FicheParticipant p={fiche.p} lots={d.lots.map((l) => l.code)} onClose={() => setFiche(null)}
+        onEnregistrer={(x) => maj({ participants: fiche.p ? r.participants.map((y) => (y.cle === x.cle ? x : y)) : [...r.participants, x] })}
+        onRetirer={fiche.p && (() => maj({ participants: r.participants.filter((y) => y.cle !== fiche.p!.cle) }))} />}
       {penalite && (
         <SaisiePenalite chantierId={r.chantierId} lots={d.lots} bareme={d.penalites} intervenants={d.intervenants}
           depuis={article(penalite.lotCode)} lotParDefaut={penalite.lotCode} datePre={r.date}
@@ -164,16 +172,33 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
   );
 }
 
-function AjoutParticipant({ lots, onClose, onAjout }: { lots: string[]; onClose: () => void; onAjout: (p: Participant) => void }) {
-  const [nom, setNom] = useState('');
-  const [role, setRole] = useState('MOA');
-  const [lot, setLot] = useState('');
+const ROLES = ['MOA', 'Contrôleur technique', 'CSPS'];
+
+/** Ajout ou modification d'un participant de la liste d'appel (nom, rôle, lot) ; retrait de la réunion. */
+function FicheParticipant({ p, lots, onClose, onEnregistrer, onRetirer }: {
+  p?: Participant; lots: string[]; onClose: () => void; onEnregistrer: (p: Participant) => void; onRetirer?: () => void;
+}) {
+  const [nom, setNom] = useState(p?.nom ?? '');
+  const [role, setRole] = useState(p ? (ROLES.includes(p.role) ? p.role : 'Autre') : 'MOA');
+  const [autre, setAutre] = useState(p && !ROLES.includes(p.role) ? p.role : '');
+  const [lot, setLot] = useState(p?.lotCode ?? '');
+  const enregistrer = () => {
+    if (!nom.trim()) { toast('Nom obligatoire'); return; }
+    const r = role === 'Autre' ? autre.trim() || 'Autre' : role;
+    onEnregistrer(p ? { ...p, nom: nom.trim(), role: r, lotCode: lot || undefined } : { cle: nouvelId(), nom: nom.trim(), role: r, lotCode: lot || undefined, presence: 'present' });
+    onClose();
+  };
   return (
-    <Sheet titre="Ajouter un participant" onClose={onClose} auto
-      pied={<button type="button" className="btn block tap" onClick={() => {
-        if (!nom.trim()) { toast('Nom obligatoire'); return; }
-        onAjout({ cle: nouvelId(), nom: nom.trim(), role, lotCode: lot || undefined, presence: 'present' }); onClose();
-      }}>Ajouter</button>}>
+    <Sheet titre={p ? 'Participant' : 'Ajouter un participant'} onClose={onClose} auto
+      pied={
+        <div className="row">
+          {onRetirer && <button type="button" className="btn danger tap" aria-label="Retirer de la liste d’appel" onClick={() => {
+            if (!confirm(`Retirer « ${p!.nom} » de la liste d’appel de cette réunion ?`)) return;
+            void onRetirer(); onClose();
+          }}><Trash2 size={22} aria-hidden /></button>}
+          <button type="button" className="btn block tap" onClick={enregistrer}>{p ? 'Enregistrer' : 'Ajouter'}</button>
+        </div>
+      }>
       <div className="stack" style={{ gap: 14 }}>
         <div className="field">
           <label htmlFor="ap-nom">Nom</label>
@@ -182,7 +207,11 @@ function AjoutParticipant({ lots, onClose, onAjout }: { lots: string[]; onClose:
         <div>
           <div className="lbl" style={{ marginBottom: 6 }}>Rôle</div>
           <Segment<string> label="Rôle" valeur={role} onChange={setRole}
-            options={['MOA', 'CT', 'CSPS', 'Autre'].map((x) => ({ v: x === 'CT' ? 'Contrôleur technique' : x, l: x }))} />
+            options={[...ROLES, 'Autre'].map((x) => ({ v: x, l: x === 'Contrôleur technique' ? 'CT' : x, aria: x }))} />
+          {role === 'Autre' && (
+            <input className="input" style={{ marginTop: 8 }} aria-label="Fonction ou organisme" value={autre}
+              placeholder="ex. Titulaire, BET structure, SDIS…" onChange={(e) => setAutre(e.target.value)} />
+          )}
         </div>
         {lots.length > 0 && (
           <div className="frow">
@@ -193,6 +222,7 @@ function AjoutParticipant({ lots, onClose, onAjout }: { lots: string[]; onClose:
             </select>
           </div>
         )}
+        {p?.intervenantId !== undefined && <div className="ink2">Modification valable pour cette réunion. Pour la garder aux suivantes, modifiez la fiche dans l’onglet Intervenants.</div>}
       </div>
     </Sheet>
   );
