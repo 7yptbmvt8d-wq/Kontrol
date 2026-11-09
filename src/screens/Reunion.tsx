@@ -11,9 +11,10 @@ import { CodeLot, Header, Pastille, Segment, Sheet, toast } from '../components/
 import { BoutonDictee } from '../components/Dictee';
 import { chargerChantier, horodatage, nomFichier } from '../services/exports/donnees';
 import { partager, TYPES } from '../services/exports/partage';
-import { aller, lien, retour } from '../router';
+import { aller, retour } from '../router';
 import { SaisieReserve } from './SaisieReserve';
 import { SaisiePenalite } from './SaisiePenalite';
+import { enregistrerProfil, lireProfil } from '../services/profil';
 
 type Etape = 'presences' | 'deroule' | 'cr';
 const etapes = new Map<number, Etape>();
@@ -87,6 +88,7 @@ type D = Awaited<ReturnType<typeof chargerChantier>>;
 // ---------------------------------------------------------------- Présences
 function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
   const [fiche, setFiche] = useState<{ p?: Participant } | null>(null); // ajout (p absent) ou modification
+  const [ficheMoe, setFicheMoe] = useState(false);
   const [penalite, setPenalite] = useState<Participant | null>(null);
   const pointer = (cle: string, presence: Presence) =>
     maj({ participants: r.participants.map((p) => (p.cle === cle ? { ...p, presence: p.presence === presence ? undefined : presence } : p)) });
@@ -124,11 +126,11 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
                 <div key={p.cle} style={{ borderTop: '1px solid var(--line)', padding: '8px 10px 8px 14px' }}>
                   <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
                     {p.cle === 'moe' || p.cle === CLE_ENTITE_MOE ? (
-                      // Représentant du MOE et MOE : repris du profil (Réglages › Vous)
-                      <a href={lien('reglages')} className="tap participant" aria-label={`${p.nom} : modifier dans Réglages › Vous`}>
-                        <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}</span>
-                        <span className="ink2">{p.role || (p.cle === 'moe' ? 'Vos nom et fonction : Réglages' : '')}</span>
-                      </a>
+                      // Représentant du MOE et MOE : profil de l'utilisateur (aussi dans Réglages › Vous)
+                      <button type="button" className="tap participant" aria-label={`Modifier ${p.nom}`} onClick={() => setFicheMoe(true)}>
+                        <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}<Pencil size={16} strokeWidth={2.2} color="var(--accent)" aria-hidden style={{ marginLeft: 6, verticalAlign: '-2px' }} /></span>
+                        <span className="ink2">{p.role || (p.cle === 'moe' ? 'Toucher pour saisir vos nom et fonction' : '')}</span>
+                      </button>
                     ) : (
                       <button type="button" className="tap participant" aria-label={`Modifier ${p.nom}`} onClick={() => setFiche({ p })}>
                         <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{p.nom}<Pencil size={16} strokeWidth={2.2} color="var(--accent)" aria-hidden style={{ marginLeft: 6, verticalAlign: '-2px' }} /></span>
@@ -159,6 +161,7 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
       </div>
       <div className="ink2" style={{ marginTop: 8 }}>P = présent · E = excusé · A = absent. Toucher à nouveau pour effacer.</div>
       <div style={{ height: 24 }} />
+      {ficheMoe && <FicheMoe cloturee={!!r.cloturee} onClose={() => setFicheMoe(false)} />}
       {fiche && <FicheParticipant p={fiche.p} lots={d.lots.map((l) => l.code)} onClose={() => setFiche(null)}
         onEnregistrer={(x) => maj({ participants: fiche.p ? r.participants.map((y) => (y.cle === x.cle ? x : y)) : [...r.participants, x] })}
         onRetirer={fiche.p && (() => maj({ participants: r.participants.filter((y) => y.cle !== fiche.p!.cle) }))} />}
@@ -169,6 +172,34 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
           onClose={() => setPenalite(null)} />
       )}
     </div>
+  );
+}
+
+/** Représentant du MOE (vous) et organisme MOE : profil enregistré pour toutes les réunions en cours et Réglages › Vous. */
+function FicheMoe({ cloturee, onClose }: { cloturee: boolean; onClose: () => void }) {
+  const [v, setV] = useState<Profil | null>(null);
+  useEffect(() => { void lireProfil().then(setV); }, []);
+  if (!v) return null;
+  const set = (k: keyof Profil, val: string) => setV((o) => ({ ...o!, [k]: val }));
+  return (
+    <Sheet titre="Maîtrise d’œuvre" sousTitre="Vous et l’organisme MOE" onClose={onClose} auto
+      pied={<button type="button" className="btn block tap" onClick={async () => {
+        await enregistrerProfil(v);
+        toast('Enregistré');
+        onClose();
+      }}>Enregistrer</button>}>
+      <div>
+        <div className="frow"><label className="rl" htmlFor="fm-nom">Votre nom</label>
+          <input id="fm-nom" value={v.nom} placeholder="ex. M. Dupont" autoComplete="name" onChange={(e) => set('nom', e.target.value)} /></div>
+        <div className="frow"><label className="rl" htmlFor="fm-fct">Fonction</label>
+          <input id="fm-fct" value={v.fonction} placeholder="Représentant du MOE" onChange={(e) => set('fonction', e.target.value)} /></div>
+        <div className="frow" style={{ borderBottom: 0 }}><label className="rl" htmlFor="fm-org">Organisme MOE</label>
+          <input id="fm-org" value={v.organisme} placeholder="ex. SID – USID de Corse" onChange={(e) => set('organisme', e.target.value)} /></div>
+      </div>
+      <div className="ink2" style={{ marginTop: 10 }}>
+        Repris dans toutes les réunions non clôturées et dans Réglages › Vous.{cloturee ? ' Cette réunion est clôturée : rouvrez-la pour y reporter la modification.' : ''}
+      </div>
+    </Sheet>
   );
 }
 

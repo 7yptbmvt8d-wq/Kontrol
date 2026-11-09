@@ -5,11 +5,12 @@ import type { Contenu, Resume } from '../services/sauvegarde';
 import { fmtDate, fmtHeure } from '../domain/dates';
 import { Header, Segment, Sheet, toast } from '../components/ui';
 import { nouvelleVersionDisponible, rafraichir } from '../pwa/miseAJour';
-import { db, getReglage, setReglage } from '../db/schema';
-import { PROFIL_DEFAUT, participantEntiteMoe, participantMoe, type Profil } from '../domain/reunion';
+import { getReglage, setReglage } from '../db/schema';
+import { participantEntiteMoe, participantMoe, type Profil } from '../domain/reunion';
 import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
 import { SectionDrive } from './SectionDrive';
+import { enregistrerProfil, lireProfil } from '../services/profil';
 
 export function Reglages() {
   const [theme, setTheme] = useState<Theme>('sombre');
@@ -122,18 +123,11 @@ export function Reglages() {
 /** Vous, en réunion : nom, fonction, organisme — repris dans la liste d'appel et le compte rendu. */
 function SectionProfil() {
   const [v, setV] = useState<Profil | null>(null);
-  useEffect(() => { getReglage<Profil>('profil', PROFIL_DEFAUT).then((p) => setV({ ...PROFIL_DEFAUT, ...p })); }, []);
+  useEffect(() => { void lireProfil().then(setV); }, []);
   if (!v) return null;
   const set = (k: keyof Profil, val: string) => setV((o) => ({ ...o!, [k]: val }));
   const enregistrer = async () => {
-    await setReglage('profil', v);
-    // Réunions en cours : mise à jour de la ligne du représentant du MOE (présence conservée)
-    const moe = participantMoe(v);
-    const entite = participantEntiteMoe(v);
-    await db.reunions.filter((r) => !r.cloturee).modify((r) => {
-      r.participants = r.participants.map((p) =>
-        p.cle === 'moe' ? { ...moe, presence: p.presence } : p.cle === entite.cle ? { ...entite, presence: p.presence } : p);
-    });
+    await enregistrerProfil(v); // met aussi à jour les réunions en cours
     toast('Enregistré');
   };
   return (
