@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, Plus, Trash2 } from 'lucide-react';
+import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { CategorieJalon, Chantier, Jalon, RefJalon } from '../domain/types';
@@ -160,7 +160,11 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
         {ecoules < 0 ? <>Démarrage dans <span className="mono">{-ecoules}</span> j</> : <>Temps <span className="mono">{pctTemps} %</span></>} · travaux <span className="mono">{av} %</span>
       </div>
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 2, flexWrap: 'wrap' }}>
-        <span className="ink2">OS{osPropre ? ' du lot' : ''} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.dateOS)}</span></span>
+        <button type="button" className="tap row ink2" onClick={onParams} aria-label={`Modifier la date d’OS${osPropre ? ' du lot' : ''} (${fmtDate(ctx.dateOS)})`}
+          style={{ minHeight: 44, border: 0, background: 'transparent', padding: 0, gap: 6 }}>
+          OS{osPropre ? ' du lot' : ''} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.dateOS)}</span>
+          <Pencil size={18} strokeWidth={2.2} color="var(--accent)" aria-hidden />
+        </button>
         <span className="ink2">{ctx.receptionReelle ? 'réception' : 'fin'} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.reception)}</span></span>
       </div>
     </section>
