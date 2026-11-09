@@ -2,6 +2,7 @@
 // Un lot = un marché : n° de marché et titulaire par lot ; jalons et pénalités communs ou propres à un lot.
 import { db } from '../db/schema';
 import { lireDate, lireRelatif } from './dates';
+import { analyserPreparation } from './preparation';
 import type { CategorieJalon, Intervenant, Jalon, Lot, PhaseControle, PointControle, RefJalon, Responsable, TypeControle } from './types';
 
 export interface Probleme { chemin: string; message: string }
@@ -30,7 +31,7 @@ const TYPES = ['document', 'agrement', 'point_arret', 'controle', 'essai', 'pres
 const RESPONSABLES = ['entreprise', 'moe', 'controleur_technique', 'csps'];
 const TYPES_ECHEANCE = ['relative', 'evenement', 'date'];
 const CATEGORIES = ['delai', 'documentaire', 'reception', 'garantie', 'paiement'];
-const REFS = ['OS_demarrage', 'reception', 'autre'];
+const REFS = ['OS_demarrage', 'fin_preparation', 'reception', 'autre'];
 
 type Obj = Record<string, unknown>;
 const estObjet = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -46,7 +47,8 @@ const SYNONYMES: Record<string, string[]> = {
   document: ['documentaire'], agrements: ['agrement'], essais: ['essai'], controles: ['controle'],
   maitre_d_oeuvre: ['moe'], maitrise_d_oeuvre: ['moe'], ct: ['controleur_technique'], controleur: ['controleur_technique'],
   bureau_de_controle: ['controleur_technique'], sps: ['csps'], coordonnateur_sps: ['csps'], titulaire: ['entreprise'],
-  prepa: ['preparation'], periode_de_preparation: ['preparation'], travaux: ['execution'], opr: ['reception'],
+  prepa: ['preparation', 'fin_preparation'], periode_de_preparation: ['preparation', 'fin_preparation'],
+  fin_de_preparation: ['fin_preparation'], fin_pp: ['fin_preparation'], fin_de_la_periode_de_preparation: ['fin_preparation'], fin_periode_preparation: ['fin_preparation'], travaux: ['execution'], opr: ['reception'],
   gpa: ['cloture', 'garantie'], parfait_achevement: ['garantie'], decompte: ['paiement'], delais: ['delai'],
   os: ['OS_demarrage'], os_demarrage: ['OS_demarrage'], os_de_demarrage: ['OS_demarrage'], ordre_de_service: ['OS_demarrage'],
   notification: ['autre'],
@@ -273,10 +275,14 @@ export function validerImport(texte: string): ResultatValidation {
 /** Crée le chantier en base (transaction unique). Retourne son identifiant. */
 export async function importerChantier(d: DonneesImport, dateOS?: string): Promise<number> {
   const now = new Date().toISOString();
+  // Période de préparation (durée, comprise ou non dans le délai) et jalons mal typés à l'extraction
+  const pp = analyserPreparation(d.jalons.map((j) => ({ categorie: j.categorie, intitule: j.intitule, reference: j.echeance.reference, jours: j.echeance.jours, lotCode: j.lot })));
+  const correction = new Map(pp.corrections.map((c) => [c.i, c]));
   return db.transaction('rw', [db.chantiers, db.lots, db.intervenants, db.points, db.jalons, db.penalites], async () => {
     const chantierId = (await db.chantiers.add({
       nom: d.chantier.nom, operation: d.chantier.operation, site: d.chantier.site,
       phase: dateOS ? 'execution' : 'preparation', avancementTravaux: 0, dateOS, compteurReserve: 0, creeLe: now, majLe: now,
+      dureePreparation: pp.duree, preparationComprise: pp.comprise,
     })) as number;
 
     const lots: Lot[] = d.chantier.lots.map((l, i) => ({ chantierId, code: l.code, intitule: l.intitule, numeroMarche: l.numero_marche, ordre: i }));
@@ -298,7 +304,7 @@ export async function importerChantier(d: DonneesImport, dateOS?: string): Promi
 
     const jalons: Jalon[] = d.jalons.map((j, i) => ({
       id: j.id, chantierId, lotCode: j.lot, categorie: j.categorie, intitule: j.intitule, articleCcap: j.article_ccap,
-      reference: j.echeance.reference, jours: j.echeance.jours, ordre: i,
+      reference: correction.get(i)?.reference ?? j.echeance.reference, jours: correction.get(i)?.jours ?? j.echeance.jours, ordre: i,
     }));
     await db.jalons.bulkAdd(jalons);
 

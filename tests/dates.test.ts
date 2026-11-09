@@ -75,3 +75,51 @@ describe('contexte par marché', () => {
     expect(datePoint({ ...p, lot: 'GO' }, ch, lots)).toBe('2026-09-02');
   });
 });
+
+describe('période de préparation et échéances en texte', () => {
+  // Cas Ventiseri : OS de démarrage de la PP le 06/08/2026, PP de 60 j non comprise, délai de 480 j
+  const chPP: Chantier = { ...ch, dateOS: '2026-08-06', dureePreparation: 60, preparationComprise: false };
+  const jalons = [
+    jalon({ id: 'PP', categorie: 'delai', reference: 'fin_preparation', jours: 0 }),
+    jalon({ id: 'D', categorie: 'delai', reference: 'OS_demarrage', jours: 480 }),
+    jalon({ id: 'AV', categorie: 'paiement', reference: 'OS_demarrage', jours: 30 }),
+  ];
+  const pt = (valeur: string): PointControle => ({
+    id: 'P', chantierId: 1, lot: 'GO', articleCctp: '', phase: 'preparation', type: 'document', intitule: '', critere: '', reference: '',
+    responsable: 'entreprise', echeance: { type: 'evenement', valeur }, bloquant: true, ordre: 0, etat: 'a_faire', commentaire: '', photoIds: [],
+  });
+
+  it('PP non comprise : le délai part de la fin de la PP', async () => {
+    const { calculJalon } = await import('../src/domain/dates');
+    const c = contexte(chPP, [lot('GO')], jalons);
+    expect(c.finPreparation).toBe('2026-10-05');
+    expect(c.debutDelai).toBe('2026-10-05');
+    expect(c.reception).toBe(ajouterJours('2026-10-05', 480));
+    expect(dateJalon(jalons[0], c)).toBe('2026-10-05');
+    expect(dateJalon(jalons[1], c)).toBe(c.reception);
+    expect(dateJalon(jalons[2], c)).toBe('2026-09-05'); // l'avance : OS + 30, pas début des travaux + 30
+    expect(calculJalon(jalons[1], c)).toBe('Début des travaux + 480 j');
+    expect(calculJalon(jalons[0], c)).toBe('Fin de préparation');
+  });
+  it('PP comprise (CCAG) : le délai part de l’OS ; début des travaux saisi prioritaire', () => {
+    const c = contexte({ ...chPP, preparationComprise: true }, [], jalons);
+    expect([c.finPreparation, c.debutDelai, c.reception]).toEqual(['2026-10-05', '2026-08-06', ajouterJours('2026-08-06', 480)]);
+    const c2 = contexte({ ...chPP, dateDebutTravaux: '2026-10-12' }, [], jalons);
+    expect([c2.finPreparation, c2.debutDelai]).toEqual(['2026-10-12', '2026-10-12']);
+  });
+  it('échéances en texte rattachées aux dates du chantier', () => {
+    const d = (v: string) => datePoint(pt(v), chPP, [lot('GO')], jalons);
+    const rec = ajouterJours('2026-10-05', 480);
+    expect(d('avant fin de la période de préparation')).toBe('2026-10-05');
+    expect(d('dès la période de préparation')).toBe('2026-10-05');
+    expect(d('au plus tard à la demande de réception')).toBe(rec);
+    expect(d('avant réception')).toBe(rec);
+    expect(d('pendant l’année de GPA')).toBe(ajouterJours(rec, 365));
+    expect(d('15 jours avant la réception')).toBe(ajouterJours(rec, -15));
+    expect(d('avant le début des travaux')).toBe('2026-10-05');
+    // Événements du déroulement du chantier : pas de date
+    for (const v of ['avant commande', 'à la réception du support et après coulage', '3 semaines avant début des travaux de menuiserie', 'à la demande du MOE']) {
+      expect(d(v)).toBeUndefined();
+    }
+  });
+});

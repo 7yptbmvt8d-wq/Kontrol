@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import type {
   Chantier, Lot, Intervenant, PointControle, Reserve, Jalon, Penalite, PenaliteAppliquee, Reunion, Photo, Reglage,
 } from '../domain/types';
+import { analyserPreparation } from '../domain/preparation';
 
 export class KontrolDB extends Dexie {
   chantiers!: EntityTable<Chantier, 'id'>;
@@ -44,6 +45,17 @@ export class KontrolDB extends Dexie {
     this.version(3).stores({ penalitesAppliquees: '++id, chantierId, [chantierId+lotCode]' });
     // v4 : réunions de chantier (présences, observations et décisions)
     this.version(4).stores({ reunions: '++id, chantierId, [chantierId+numero]' });
+    // v5 : période de préparation (durée, comprise ou non dans le délai) lue dans les jalons ; jalons mal typés corrigés
+    this.version(5).stores({}).upgrade(async (tx) => {
+      const chantiers = await tx.table('chantiers').toArray();
+      for (const c of chantiers) {
+        if (c.dureePreparation !== undefined) continue;
+        const jalons: Jalon[] = await tx.table('jalons').where('chantierId').equals(c.id).sortBy('ordre');
+        const a = analyserPreparation(jalons);
+        if (a.duree !== undefined) await tx.table('chantiers').update(c.id, { dureePreparation: a.duree, preparationComprise: a.comprise });
+        for (const k of a.corrections) await tx.table('jalons').update(jalons[k.i].uid, { reference: k.reference, jours: k.jours });
+      }
+    });
   }
 }
 

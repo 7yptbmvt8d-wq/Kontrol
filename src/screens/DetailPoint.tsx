@@ -4,7 +4,7 @@ import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { EtatPoint } from '../domain/types';
 import { ETAT_POINT, PHASE_CONTROLE, RESPONSABLE, STATUT_RESERVE, TYPE_CONTROLE, bloquantNonValide, refReserve, statutAffiche } from '../domain/statuts';
-import { aujourdHui, datePoint, ecartJours, fmtDate } from '../domain/dates';
+import { aujourdHui, contexte, datePoint, ecartJours, echeanceEvenement, fmtDate } from '../domain/dates';
 import { estValide, lireParcours } from '../domain/checklist';
 import { BadgeBloquant, Header, Pastille, toast } from '../components/ui';
 import { BandeauPhotos } from '../components/Photos';
@@ -18,17 +18,20 @@ const ORDRE_ETATS: { v: EtatPoint; large?: boolean }[] = [
   { v: 'en_cours' }, { v: 'a_faire' }, { v: 'sans_objet' },
 ];
 
+const sansAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: number }) {
   const data = useLive(`point:${uid}`, async () => {
-    const [p, ch, lots] = await Promise.all([
+    const [p, ch, lots, jalons] = await Promise.all([
       db.points.get(uid),
       db.chantiers.get(chantierId),
       db.lots.where('chantierId').equals(chantierId).toArray(),
+      db.jalons.where('chantierId').equals(chantierId).toArray(),
     ]);
     if (!p || !ch || p.chantierId !== chantierId) return null;
     const groupe = await db.points.where('[chantierId+lot]').equals([chantierId, p.lot]).filter((x) => x.phase === p.phase).sortBy('ordre');
     const reserves = await db.reserves.where('chantierId').equals(chantierId).filter((r) => r.pointId === p.id).sortBy('numero');
-    return { p, ch, lots, reserves, rang: groupe.findIndex((x) => x.uid === uid) + 1, taille: groupe.length };
+    return { p, ch, lots, jalons, reserves, rang: groupe.findIndex((x) => x.uid === uid) + 1, taille: groupe.length };
   }, [chantierId, uid]);
   const [edition, setEdition] = useState(false);
   const [saisie, setSaisie] = useState(false);
@@ -43,13 +46,15 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
       </main>
     );
   }
-  const { p, ch, lots, reserves, rang, taille } = data;
+  const { p, ch, lots, jalons, reserves, rang, taille } = data;
   const parcours = lireParcours(chantierId) ?? [];
   const i = parcours.indexOf(uid);
   const prec = i > 0 ? parcours[i - 1] : undefined;
   const suiv = i >= 0 && i < parcours.length - 1 ? parcours[i + 1] : undefined;
 
-  const date = datePoint(p, ch, lots);
+  const date = datePoint(p, ch, lots, jalons);
+  // Échéance en texte rattachée à une date du chantier : « avant fin de la période de préparation » → fin de PP
+  const evenement = p.echeance.type === 'evenement' ? echeanceEvenement(p.echeance.valeur, contexte(ch, lots, jalons, p.lot)) : undefined;
   const retard = date && !estValide(p) ? ecartJours(date, aujourdHui()) : 0;
 
   const changerEtat = async (etat: EtatPoint) => {
@@ -115,6 +120,7 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
             ? <span className="mono" style={{ fontWeight: 600, color: retard > 0 ? 'var(--r)' : undefined }}>{fmtDate(date)}{retard > 0 ? ` · +${retard} j` : ''}</span>
             : p.echeance.type === 'relative' ? <span className="ink2">OS non saisie ({p.echeance.valeur} j)</span>
             : p.echeance.valeur || '—'}
+          {evenement && <div className="ink2">{p.echeance.valeur}{sansAccents(p.echeance.valeur).includes(sansAccents(evenement.base)) ? '' : ` (→ ${evenement.base})`}</div>}
         </dd></div>
         <div className="kv"><dt>Responsable</dt><dd>{RESPONSABLE[p.responsable]}</dd></div>
       </dl>

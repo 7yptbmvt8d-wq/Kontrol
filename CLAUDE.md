@@ -52,12 +52,22 @@ Les maquettes donnent la forme ; le cahier des charges donne les fonctions et le
   - contexte d'un lot : OS du lot (sinon OS générale) ; délai = plus grand jalon `delai` rapporté à l'OS propre au lot,
     sinon commun ; réception = réelle du lot › (si ni OS ni délai propres) réception de l'ensemble › OS du lot + délai ;
   - contexte de l'ensemble : OS générale, délai commun, réception réelle du chantier ou OS + délai ;
-  - `OS_demarrage` → OS + jours ; `reception` → réception + jours ; `autre` → date saisie dans l'app (`dateFixe`) ;
+  - période de préparation (chantier : `dureePreparation`, `preparationComprise`, `dateDebutTravaux` = OS n° 2 facultative) :
+    fin de PP = début des travaux saisi, sinon OS + durée ; **départ du délai** = OS, ou fin de PP si la PP n'est pas
+    comprise dans le délai (CCAP) ; réception prévisionnelle = départ du délai + délai ;
+  - `OS_demarrage` → OS + jours (jalons « delai » : départ du délai + jours) ; `fin_preparation` → fin de PP + jours ;
+    `reception` → réception + jours ; `autre` → date saisie dans l'app (`dateFixe`) ; libellé : `calculJalon()` ;
   - un jalon propre à un lot se calcule dans le contexte de ce lot ; un jalon commun dans celui de l'ensemble
     (ou du lot filtré dans l'onglet Jalons) ;
   - jalon fait = `dateRealisee` renseignée.
 - Échéance d'un point : `relative` = jours après l'OS **de son lot** (« 30 », « J+30 », « OS-15 ») ;
-  `date` = JJ/MM/AAAA ou AAAA-MM-JJ ; `evenement` = texte libre.
+  `date` = JJ/MM/AAAA ou AAAA-MM-JJ ; `evenement` = texte libre, rattaché quand c'est possible à une date du chantier
+  (`echeanceEvenement` : période de préparation, début des travaux, (demande de) réception / OPR, GPA, OS ; décalage
+  « 15 jours avant… ») ; les événements du déroulement (commande, pose, coulage…) restent sans date.
+  `datePoint(p, ch, lots, jalons)` : toujours passer les jalons.
+- `src/domain/preparation.ts` (testé) : `analyserPreparation()` lit la période de préparation dans les jalons
+  (jalon « delai » « période de préparation », « non comprise » → hors délai) et corrige les jalons mal typés
+  (fin de PP, « après l'OS de démarrage », garanties biennale / décennale) — à l'import, migration Dexie v5, restauration.
 
 ## Format du fichier JSON d'import
 ```json
@@ -176,6 +186,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 (a) chantiers + import JSON ✅ · (b) checklist ✅ · (c) réserves + photos ✅ · (d) exports ✅ · (e) sauvegarde Drive ✅ · (f) PWA hors ligne ✅ — **V1 complète (1.0.0)**.
 V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2 : mode réunion.
 V1.3 : dossiers chantiers sur Google Drive (rapport PDF, Excel, photos).
+V1.4 : période de préparation (comprise ou non dans le délai), échéances en texte rattachées aux dates du chantier.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

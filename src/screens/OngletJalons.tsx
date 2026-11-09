@@ -3,7 +3,7 @@ import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { CategorieJalon, Chantier, Jalon, RefJalon } from '../domain/types';
-import { aujourdHui, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
+import { aujourdHui, calculJalon, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 
 const TON: Record<StatutJalon, { dot: string; date: string; libelle: string }> = {
@@ -13,7 +13,6 @@ const TON: Record<StatutJalon, { dot: string; date: string; libelle: string }> =
   non_date: { dot: 'var(--n)', date: 'var(--ink2)', libelle: 'Non daté' },
 };
 
-const REF_LIB = { OS_demarrage: 'OS', reception: 'réception', autre: 'date saisie' } as const;
 
 /** Filtre mémorisé par chantier pendant la session. */
 const filtres = new Map<number, string>();
@@ -81,8 +80,11 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
               else if (st === 'en_retard') sous = `En retard · +${ecartJours(date!, today)} j`;
               else if (st === 'a_venir') {
                 const n = ecartJours(today, date!);
-                sous = `${an}${REF_LIB[j.reference]}${j.reference !== 'autre' ? ` ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j` : ''} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
-              } else sous = j.reference === 'autre' ? `Date à saisir${j.jours ? ` · délai ${j.jours} j` : ''}` : j.reference === 'reception' && ctx.dateOS ? 'Délai d’exécution inconnu' : 'Date d’OS à saisir';
+                sous = `${an}${calculJalon(j, ctx)} · ${n === 0 ? 'aujourd’hui' : `dans ${n} j`}`;
+              } else sous = j.reference === 'autre' ? `Date à saisir${j.jours ? ` · délai ${j.jours} j` : ''}`
+                : !ctx.dateOS ? 'Date d’OS à saisir'
+                : j.reference === 'fin_preparation' ? 'Durée de la période de préparation à saisir'
+                : 'Délai d’exécution inconnu';
               return (
                 <li key={j.uid}>
                   <div className="tl-date" style={{ color: t.date }}>{fmtCourt(date)}</div>
@@ -138,8 +140,11 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
       </section>
     );
   }
-  const ecoules = ecartJours(ctx.dateOS, today);
+  // Le délai d'exécution part de l'OS, ou du début des travaux si la période de préparation n'y est pas comprise
+  const depart = ctx.debutDelai ?? ctx.dateOS;
+  const ecoules = ecartJours(depart, today);
   const pctTemps = ctx.delai ? Math.max(0, Math.min(100, Math.round((ecoules / ctx.delai) * 100))) : 0;
+  const enPreparation = !!ctx.finPreparation && today >= ctx.dateOS && today < ctx.finPreparation;
   const av = Math.max(0, Math.min(100, ch.avancementTravaux));
   return (
     <section className="card" aria-label="Délai d’exécution" style={{ padding: 14 }}>
@@ -157,8 +162,13 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
         <div aria-hidden style={{ position: 'absolute', left: `calc(${av}% - 1px)`, top: -4, width: 2, height: 18, background: 'var(--ink)' }} />
       </div>
       <div className="ink2" style={{ marginTop: 8 }}>
-        {ecoules < 0 ? <>Démarrage dans <span className="mono">{-ecoules}</span> j</> : <>Temps <span className="mono">{pctTemps} %</span></>} · travaux <span className="mono">{av} %</span>
+        {ecoules < 0 ? <>{enPreparation ? 'Période de préparation · travaux' : 'Démarrage'} dans <span className="mono">{-ecoules}</span> j</> : <>Temps <span className="mono">{pctTemps} %</span></>} · travaux <span className="mono">{av} %</span>
       </div>
+      {ch.dureePreparation ? (
+        <div className="ink2">
+          Préparation <span className="mono">{ch.dureePreparation}</span> j{ch.preparationComprise === false ? ' (hors délai)' : ''} · fin <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.finPreparation)}</span>
+        </div>
+      ) : null}
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 2, flexWrap: 'wrap' }}>
         <button type="button" className="tap row ink2" onClick={onParams} aria-label={`Modifier la date d’OS${osPropre ? ' du lot' : ''} (${fmtDate(ctx.dateOS)})`}
           style={{ minHeight: 44, border: 0, background: 'transparent', padding: 0, gap: 6 }}>
@@ -187,7 +197,6 @@ function EditionJalon({ j, chantierId, lots, calculer, onClose }: {
   const nJours = /^-?\d+$/.test(jours.trim()) ? Number(jours) : NaN;
   const brouillon: Jalon = { ...v, jours: Number.isNaN(nJours) ? 0 : nJours, dateFixe: v.dateFixe || undefined };
   const { date, ctx } = calculer(brouillon);
-  const base = v.reference === 'OS_demarrage' ? `OS (${fmtDate(ctx.dateOS)})` : `Réception (${fmtDate(ctx.reception)})`;
 
   const enregistrer = async () => {
     if (!v.intitule.trim()) { toast('Intitulé obligatoire'); return; }
@@ -224,7 +233,7 @@ function EditionJalon({ j, chantierId, lots, calculer, onClose }: {
       <div className="stack" style={{ gap: 14 }}>
         <dl className="card flush">
           <div className="kv"><dt>Échéance</dt><dd className="mono" style={{ fontWeight: 600 }}>{fmtDate(date)}</dd></div>
-          <div className="kv"><dt>Calcul</dt><dd>{v.reference === 'autre' ? 'Date saisie' : `${base} ${brouillon.jours < 0 ? '−' : '+'} ${Math.abs(brouillon.jours)} j`}</dd></div>
+          <div className="kv"><dt>Calcul</dt><dd>{calculJalon(brouillon, ctx)}</dd></div>
         </dl>
 
         <div className="field">
@@ -245,7 +254,8 @@ function EditionJalon({ j, chantierId, lots, calculer, onClose }: {
         <div>
           <div className="lbl" style={{ marginBottom: 6 }}>Calculé à partir de</div>
           <Segment<RefJalon> label="Référence du jalon" valeur={v.reference} onChange={(r) => set('reference', r)}
-            options={[{ v: 'OS_demarrage', l: 'OS' }, { v: 'reception', l: 'Réception' }, { v: 'autre', l: 'Date libre' }]} />
+            options={[{ v: 'OS_demarrage', l: 'OS', aria: 'OS de démarrage' }, { v: 'fin_preparation', l: 'Fin PP', aria: 'Fin de la période de préparation' },
+              { v: 'reception', l: 'Réception' }, { v: 'autre', l: 'Date', aria: 'Date libre' }]} />
           <div style={{ marginTop: 8 }}>
             {v.reference === 'autre' ? (
               <input type="date" className="input mono" aria-label="Date d’échéance" value={v.dateFixe ?? ''} onChange={(e) => set('dateFixe', e.target.value)} />

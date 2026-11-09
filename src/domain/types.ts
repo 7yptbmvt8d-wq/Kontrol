@@ -17,7 +17,7 @@ export type Origine = 'visite' | 'opr' | 'cr' | 'controle';
 export type PhaseChantier = 'preparation' | 'execution' | 'opr' | 'gpa' | 'clos';
 
 export type CategorieJalon = 'delai' | 'documentaire' | 'reception' | 'garantie' | 'paiement';
-export type RefJalon = 'OS_demarrage' | 'reception' | 'autre';
+export type RefJalon = 'OS_demarrage' | 'fin_preparation' | 'reception' | 'autre';
 
 export interface Chantier {
   id?: number;
@@ -28,6 +28,12 @@ export interface Chantier {
   avancementTravaux: number; // %
   dateOS?: string; // OS de démarrage général (par défaut pour tous les lots)
   dateReceptionReelle?: string; // réception de l'ensemble
+  /** Période de préparation (CCAP) : durée en jours à compter de l'OS de démarrage. */
+  dureePreparation?: number;
+  /** false = période de préparation NON comprise dans le délai d'exécution (le délai part du début des travaux). */
+  preparationComprise?: boolean;
+  /** Début des travaux (ex. OS n° 2) ; vide = OS + durée de la période de préparation. */
+  dateDebutTravaux?: string;
   compteurReserve: number; // pour numéroter R-01, R-02…
   creeLe: string;
   majLe: string;

@@ -4,6 +4,7 @@ import { db, supprimerChantier } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Chantier, Lot, PhaseChantier, TypeControle } from '../domain/types';
 import { PHASE_CHANTIER, TYPE_CONTROLE } from '../domain/statuts';
+import { ajouterJours, fmtDate } from '../domain/dates';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 import { remplacer } from '../router';
 
@@ -12,6 +13,7 @@ const COURT: Partial<Record<PhaseChantier, string>> = { preparation: 'Prépa.', 
 export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; onClose: () => void }) {
   const [v, setV] = useState(chantier);
   const [avancement, setAvancement] = useState(String(chantier.avancementTravaux));
+  const [prepa, setPrepa] = useState(chantier.dureePreparation ? String(chantier.dureePreparation) : '');
   const [lots, setLots] = useState<Lot[] | null>(null);
   const [enCours, setEnCours] = useState(false);
 
@@ -31,6 +33,7 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
         await db.chantiers.put({
           ...v, nom: v.nom.trim(), site: v.site.trim(), avancementTravaux: pct,
           dateOS: v.dateOS || undefined, dateReceptionReelle: v.dateReceptionReelle || undefined,
+          dureePreparation: Number(prepa) || undefined, preparationComprise: v.preparationComprise !== false, dateDebutTravaux: v.dateDebutTravaux || undefined,
           majLe: new Date().toISOString(),
         });
         if (lots) {
@@ -72,6 +75,15 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <input id="p-os" type="date" className="mono" value={v.dateOS ?? ''} onChange={(e) => set('dateOS', e.target.value)} />
           </div>
           <div className="frow">
+            <label className="rl" htmlFor="p-pp">Préparation (j)</label>
+            <input id="p-pp" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={prepa} placeholder="durée (CCAP)"
+              onChange={(e) => setPrepa(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} onFocus={(e) => e.target.select()} />
+          </div>
+          <div className="frow">
+            <label className="rl" htmlFor="p-dt">Début travaux</label>
+            <input id="p-dt" type="date" className="mono" value={v.dateDebutTravaux ?? ''} onChange={(e) => set('dateDebutTravaux', e.target.value)} />
+          </div>
+          <div className="frow">
             <label className="rl" htmlFor="p-rec">Réception</label>
             <input id="p-rec" type="date" className="mono" value={v.dateReceptionReelle ?? ''} onChange={(e) => set('dateReceptionReelle', e.target.value)} />
           </div>
@@ -80,6 +92,14 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <input id="p-av" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={avancement}
               onChange={(e) => setAvancement(e.target.value.replace(/[^\d]/g, '').slice(0, 3))} onFocus={(e) => e.target.select()} />
           </div>
+        </div>
+
+        <div>
+          <div className="lbl" style={{ marginBottom: 6 }}>Période de préparation et délai d’exécution</div>
+          <Segment<'oui' | 'non'> label="Période de préparation comprise dans le délai d’exécution" valeur={v.preparationComprise === false ? 'non' : 'oui'}
+            onChange={(x) => set('preparationComprise', x === 'oui')}
+            options={[{ v: 'oui', l: 'Comprise', aria: 'Comprise dans le délai' }, { v: 'non', l: 'Non comprise', aria: 'Non comprise dans le délai' }]} />
+          <div className="ink2" style={{ marginTop: 6 }}>{aideDelai(v, Number(prepa) || undefined)}</div>
         </div>
 
         <div>
@@ -127,6 +147,19 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
       </div>
     </Sheet>
   );
+}
+
+/** Explication du calcul : fin de la période de préparation, départ du délai d'exécution. */
+function aideDelai(v: Chantier, duree?: number): string {
+  if (!v.dateOS) return 'Saisissez l’OS de démarrage : les dates se calculent ensuite (période de préparation, délai, réception).';
+  const fin = v.dateDebutTravaux || (duree ? ajouterJours(v.dateOS, duree) : undefined);
+  const morceaux = [
+    fin ? `Fin de la période de préparation / début des travaux : ${fmtDate(fin)}${v.dateDebutTravaux ? ' (date saisie)' : ` (OS + ${duree} j)`}.` : 'Durée de la période de préparation non renseignée.',
+    v.preparationComprise === false
+      ? `Le délai d’exécution part du début des travaux${fin ? ` (${fmtDate(fin)})` : ''}.`
+      : `Le délai d’exécution part de l’OS (${fmtDate(v.dateOS)}), période de préparation comprise.`,
+  ];
+  return morceaux.join(' ');
 }
 
 /** Réglage en masse du caractère bloquant, type par type (ex. retirer les 30 documents marqués bloquants). */

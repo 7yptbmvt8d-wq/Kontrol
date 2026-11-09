@@ -108,7 +108,7 @@ export function xlsxJalons(d: DonneesChantier, nom: string): FichierPret {
 
 function lignesPoints(d: DonneesChantier, points: DonneesChantier['points'], ref: string): Ligne[] {
   return points.map((p) => {
-    const date = datePoint(p, d.ch, d.lots);
+    const date = datePoint(p, d.ch, d.lots, d.jalons);
     const valide = p.etat === 'conforme' || p.etat === 'sans_objet';
     return {
       Lot: p.lot,

@@ -1,5 +1,5 @@
 // Mode réunion : participants, actions reprises, changements depuis la réunion précédente, compte rendu (texte pour Claude).
-import type { Intervenant, Lot, Observation, Participant, PointControle, Reunion, TypeReunion, Chantier } from './types';
+import type { Intervenant, Jalon, Lot, Observation, Participant, PointControle, Reunion, TypeReunion, Chantier } from './types';
 import { ROLE_INTERVENANT, ETAT_POINT, GRAVITE, bloquantNonValide, refReserve, statutAffiche, STATUT_RESERVE } from './statuts';
 import { aujourdHui, datePoint, ecartJours, fmtDate, jourLocal, fmtHeure } from './dates';
 import { pourcentage, statistiques } from './checklist';
@@ -70,12 +70,12 @@ export function nouvelleReunion(chantierId: number, numero: number, intervenants
  * - prioritaires : non conformes, en cours, échéance dépassée ou à 15 j (triés : non conformes, retards, en cours) ;
  * - autresBloquants : points bloquants encore à faire, sans échéance proche (résumés, détail sur demande).
  */
-export function pointsASuivre(points: PointControle[], ch: Chantier, lots: Lot[], ref = aujourdHui()) {
+export function pointsASuivre(points: PointControle[], ch: Chantier, lots: Lot[], ref = aujourdHui(), jalons: Jalon[] = []) {
   const prioritaires: { p: PointControle; rang: number }[] = [];
   const autresBloquants: PointControle[] = [];
   for (const p of points) {
     if (p.etat === 'conforme' || p.etat === 'sans_objet') continue;
-    const d = datePoint(p, ch, lots);
+    const d = datePoint(p, ch, lots, jalons);
     const ecart = d ? ecartJours(ref, d) : undefined; // < 0 : dépassée
     if (p.etat === 'non_conforme') prioritaires.push({ p, rang: 0 });
     else if (ecart !== undefined && ecart < 0) prioritaires.push({ p, rang: 1 });
@@ -168,12 +168,12 @@ export function compteRendu(r: Reunion, d: DonneesChantier, precedente?: Reunion
       L.push(`  Réserves non levées (${res.length}) :`);
       res.forEach((x) => L.push(`  - ${refReserve(x.numero)} ${x.description}${x.localisation ? ` · ${x.localisation}` : ''} — ${GRAVITE[x.gravite]} — ${STATUT_RESERVE[statutAffiche(x, ref)].libelle} — échéance ${fmtDate(x.echeance)}`));
     }
-    const { prioritaires: pts, autresBloquants } = pointsASuivre(d.points.filter((p) => p.lot === l.code), d.ch, d.lots, ref);
+    const { prioritaires: pts, autresBloquants } = pointsASuivre(d.points.filter((p) => p.lot === l.code), d.ch, d.lots, ref, d.jalons);
     if (autresBloquants.length) L.push(`  Points bloquants restant à faire : ${autresBloquants.length} (sans échéance proche, voir la checklist).`);
     if (pts.length) {
       L.push(`  Points de contrôle à suivre (${pts.length}) :`);
       pts.forEach((p) => {
-        const date = datePoint(p, d.ch, d.lots);
+        const date = datePoint(p, d.ch, d.lots, d.jalons);
         L.push(`  - ${p.articleCctp ? `${p.articleCctp} ` : ''}${p.intitule} — ${ETAT_POINT[p.etat].libelle}${p.bloquant ? ' — BLOQUANT' : ''}` +
           `${date ? ` — échéance ${fmtDate(date)}` : p.echeance.valeur ? ` — ${p.echeance.valeur}` : ''}${p.commentaire ? ` — ${p.commentaire}` : ''}`);
       });

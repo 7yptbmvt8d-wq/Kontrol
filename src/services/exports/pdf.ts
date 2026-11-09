@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import { db } from '../../db/schema';
 import type { Reserve } from '../../domain/types';
-import { aujourdHui, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
+import { aujourdHui, contexte, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, PHASE_CONTROLE, bloquantNonValide, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
 import { estValide, grouper, statistiques } from '../../domain/checklist';
 import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier } from './donnees';
@@ -275,7 +275,14 @@ function sectionSynthese(doc: DocPdf, d: DonneesChantier) {
   doc.texte(d.ch.nom, { taille: 13, gras: true });
   const infos = [d.ch.operation && `Opération : ${d.ch.operation}`, d.ch.site && `Site : ${d.ch.site}`, `Phase : ${PHASE_CHANTIER[d.ch.phase]}`,
     d.ch.dateOS && `OS générale : ${fmtDate(d.ch.dateOS)}`].filter(Boolean).join('   ·   ');
+  const ctx = contexte(d.ch, d.lots, d.jalons);
+  const delais = [
+    d.ch.dureePreparation && `Période de préparation : ${d.ch.dureePreparation} j${d.ch.preparationComprise === false ? ' (non comprise dans le délai)' : ''}${ctx.finPreparation ? `, fin le ${fmtDate(ctx.finPreparation)}` : ''}`,
+    ctx.delai !== undefined && `Délai d’exécution : ${ctx.delai} j${ctx.debutDelai ? ` à compter du ${fmtDate(ctx.debutDelai)}` : ''}`,
+    ctx.reception && `Réception ${ctx.receptionReelle ? '' : 'prévisionnelle '}: ${fmtDate(ctx.reception)}`,
+  ].filter(Boolean).join('   ·   ');
   doc.texte(infos, { taille: 9.5, couleur: GRIS });
+  if (delais) doc.texte(delais, { taille: 9.5, couleur: GRIS });
   doc.espace(2);
   doc.texte('Marchés', { taille: 12, gras: true });
   for (const l of d.lots) {
@@ -331,7 +338,7 @@ function sectionChecklist(doc: DocPdf, d: DonneesChantier) {
       pdf.text(pdfTexte(e.libelle), 210 - MARGE, y0 + 3.6, { align: 'right' });
       doc.texte(p.articleCctp || p.id, { taille: 8.5, couleur: GRIS, largeur: LARGEUR - 34 });
       doc.texte(p.intitule, { taille: 10, gras: true, largeur: LARGEUR - 34 });
-      const date = estValide(p) ? undefined : datePoint(p, d.ch, d.lots);
+      const date = estValide(p) ? undefined : datePoint(p, d.ch, d.lots, d.jalons);
       const retard = date ? ecartJours(date, ref) : 0;
       const details = [
         bloquantNonValide(p) && 'Point bloquant',

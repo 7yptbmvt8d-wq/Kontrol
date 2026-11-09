@@ -27,18 +27,19 @@ const FILTRES: { v: FiltreEtat; l: string; dot?: string }[] = [
 export function OngletChecklist({ chantier: ch }: { chantier: Chantier }) {
   const id = ch.id!;
   const data = useLive(`checklist:${id}`, async () => {
-    const [points, lots] = await Promise.all([
+    const [points, lots, jalons] = await Promise.all([
       db.points.where('chantierId').equals(id).toArray(),
       db.lots.where('chantierId').equals(id).sortBy('ordre'),
+      db.jalons.where('chantierId').equals(id).toArray(),
     ]);
-    return { points, lots };
+    return { points, lots, jalons };
   }, [id]);
   const [f, setF] = useState<Filtres>(memoire.get(id) ?? { etat: 'tous', lot: '', texte: '' });
   const [ajout, setAjout] = useState(false);
   const maj = (patch: Partial<Filtres>) => setF((o) => { const n = { ...o, ...patch }; memoire.set(id, n); return n; });
 
   if (!data) return null;
-  const { points, lots } = data;
+  const { points, lots, jalons } = data;
   const st = statistiques(points);
   const compte = (v: FiltreEtat) =>
     v === 'tous' ? st.total : v === 'bloquants' ? st.bloquants : v === 'a_faire' ? st.aFaire : v === 'en_cours' ? st.enCours : st.nonConformes;
@@ -99,7 +100,7 @@ export function OngletChecklist({ chantier: ch }: { chantier: Chantier }) {
             {g.points.map((p) => {
               const e = ETAT_POINT[p.etat];
               const blo = bloquantNonValide(p);
-              const date = estValide(p) ? undefined : datePoint(p, ch, lots);
+              const date = estValide(p) ? undefined : datePoint(p, ch, lots, jalons);
               const retard = date ? ecartJours(date, today) : 0;
               return (
                 <a key={p.uid} href={lien('chantier', id, 'point', p.uid!)} className={`pt tap${blo ? ' alert' : ''}`}

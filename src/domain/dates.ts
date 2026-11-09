@@ -87,7 +87,9 @@ export function retard(iso: string | undefined, ref = aujourdHui()): number {
 
 /** Contexte de calcul d'un marché (ou de l'ensemble si lotCode absent). */
 export interface Contexte {
-  dateOS?: string;
+  dateOS?: string; // OS de démarrage (début de la période de préparation le cas échéant)
+  finPreparation?: string; // fin de la période de préparation = début des travaux
+  debutDelai?: string; // départ du délai d'exécution : OS, ou début des travaux si la préparation n'y est pas comprise
   delai?: number; // jours
   reception?: string; // réelle si saisie, sinon prévisionnelle
   receptionReelle: boolean;
@@ -100,33 +102,61 @@ function delaiDe(jalons: Jalon[], lotCode: string | undefined): number | undefin
 }
 
 /**
- * - Ensemble : OS générale ; délai = jalons « delai » communs ; réception = réelle, sinon OS + délai.
+ * Fin de la période de préparation et départ du délai d'exécution, à partir d'une OS.
+ * La date de début des travaux saisie (OS n° 2) vaut pour l'ensemble ; un lot avec sa propre OS la recalcule.
+ */
+function bornes(ch: Chantier, os: string | undefined, osPropre: boolean) {
+  const finPreparation = (!osPropre && ch.dateDebutTravaux) || (os && ch.dureePreparation ? ajouterJours(os, ch.dureePreparation) : undefined);
+  const debutDelai = ch.preparationComprise === false ? (finPreparation ?? os) : os;
+  return { finPreparation, debutDelai };
+}
+
+/**
+ * - Ensemble : OS générale ; délai = jalons « delai » communs ; réception = réelle, sinon départ du délai + délai.
  * - Lot (marché) : OS du lot (sinon OS générale) ; délai propre au lot (sinon délai commun) ;
  *   réception = réelle du lot ; sinon, si le lot n'a ni OS ni délai propres, celle de l'ensemble ;
- *   sinon OS du lot + délai (toutes les dates d'un même marché partent de la même OS).
+ *   sinon départ du délai du lot + délai (toutes les dates d'un même marché partent de la même OS).
+ * - Départ du délai : l'OS, ou la fin de la période de préparation si elle n'est pas comprise dans le délai (CCAP).
  */
 export function contexte(ch: Chantier, lots: Lot[], jalons: Jalon[], lotCode?: string): Contexte {
   const delaiCommun = delaiDe(jalons, undefined);
-  const recCommune = ch.dateReceptionReelle ?? (ch.dateOS && delaiCommun !== undefined ? ajouterJours(ch.dateOS, delaiCommun) : undefined);
+  const commun = bornes(ch, ch.dateOS, false);
+  const recCommune = ch.dateReceptionReelle ?? (commun.debutDelai && delaiCommun !== undefined ? ajouterJours(commun.debutDelai, delaiCommun) : undefined);
   const lot = lotCode ? lots.find((l) => l.code === lotCode) : undefined;
-  if (!lot) return { dateOS: ch.dateOS, delai: delaiCommun, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  if (!lot) return { dateOS: ch.dateOS, ...commun, delai: delaiCommun, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
   const dateOS = lot.dateOS || ch.dateOS;
+  const b = bornes(ch, dateOS, !!lot.dateOS);
   const delaiPropre = delaiDe(jalons, lot.code);
   const delai = delaiPropre ?? delaiCommun;
-  if (lot.dateReceptionReelle) return { dateOS, delai, reception: lot.dateReceptionReelle, receptionReelle: true };
-  if (!lot.dateOS && delaiPropre === undefined) return { dateOS, delai, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
-  return { dateOS, delai, reception: dateOS && delai !== undefined ? ajouterJours(dateOS, delai) : undefined, receptionReelle: false };
+  const base = { dateOS, ...b, delai };
+  if (lot.dateReceptionReelle) return { ...base, reception: lot.dateReceptionReelle, receptionReelle: true };
+  if (!lot.dateOS && delaiPropre === undefined) return { ...base, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  return { ...base, reception: b.debutDelai && delai !== undefined ? ajouterJours(b.debutDelai, delai) : undefined, receptionReelle: false };
+}
+
+/** Date de départ d'un jalon : les jalons « délai » rapportés à l'OS comptent à partir du départ du délai d'exécution. */
+function departJalon(j: Jalon, ctx: Contexte): string | undefined {
+  switch (j.reference) {
+    case 'OS_demarrage': return j.categorie === 'delai' ? ctx.debutDelai : ctx.dateOS;
+    case 'fin_preparation': return ctx.finPreparation;
+    case 'reception': return ctx.reception;
+    default: return undefined;
+  }
 }
 
 export function dateJalon(j: Jalon, ctx: Contexte): string | undefined {
-  switch (j.reference) {
-    case 'OS_demarrage':
-      return ctx.dateOS ? ajouterJours(ctx.dateOS, j.jours) : undefined;
-    case 'reception':
-      return ctx.reception ? ajouterJours(ctx.reception, j.jours) : undefined;
-    default:
-      return j.dateFixe;
-  }
+  if (j.reference === 'autre') return j.dateFixe;
+  const d = departJalon(j, ctx);
+  return d ? ajouterJours(d, j.jours) : undefined;
+}
+
+/** Libellé du calcul d'un jalon : « OS + 30 j », « Début des travaux + 480 j », « Fin de préparation », « Date saisie ». */
+export function calculJalon(j: Jalon, ctx: Contexte): string {
+  if (j.reference === 'autre') return 'Date saisie';
+  const base = j.reference === 'reception' ? 'Réception'
+    : j.reference === 'fin_preparation' ? 'Fin de préparation'
+    : j.categorie === 'delai' && ctx.debutDelai && ctx.debutDelai !== ctx.dateOS ? 'Début des travaux' : 'OS';
+  return j.jours ? `${base} ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j` : base;
 }
 
 export type StatutJalon = 'fait' | 'en_retard' | 'a_venir' | 'non_date';
@@ -146,13 +176,44 @@ export function lireRelatif(v: string): number | undefined {
   return (m[1] === '-' ? -1 : 1) * Number(m[2]);
 }
 
-/** Échéance d'un point : relative à l'OS de son lot (marché), sinon à l'OS générale. */
-export function datePoint(p: PointControle, ch: Chantier, lots: Lot[]): string | undefined {
+/**
+ * Échéance « événement » (texte du CCTP / CCAP) rattachée à une date connue du chantier :
+ * période de préparation, début des travaux, réception (ou sa demande, OPR), GPA, OS / notification ;
+ * avec un éventuel décalage (« 15 jours avant… », « dans le mois suivant… »).
+ * Les événements liés au déroulement du chantier (commande, pose, coulage…) restent sans date.
+ */
+export function echeanceEvenement(texte: string, ctx: Contexte): { date: string; base: string } | undefined {
+  const t = texte.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
+  if (!t) return undefined;
+  let date: string | undefined;
+  let base: string;
+  if (/\bgpa\b|parfait achevement/.test(t)) { date = ctx.reception && ajouterJours(ctx.reception, 365); base = 'fin de la GPA'; }
+  else if (/periode de preparation|phase de preparation|\bpp\b/.test(t)) { date = ctx.finPreparation; base = 'fin de la période de préparation'; }
+  else if (/(demande de reception|operations prealables a la reception|\bopr\b|reception des travaux)|(^|\b(avant|a|lors de|pour|des|apres) (la )?)reception$/.test(t)) {
+    date = ctx.reception; base = ctx.receptionReelle ? 'réception' : 'réception prévisionnelle';
+  } else if (/(debut|demarrage|commencement) (des )?travaux$|^avant (les )?travaux$/.test(t)) { date = ctx.finPreparation ?? ctx.debutDelai; base = 'début des travaux'; }
+  else if (/notification du marche|os de demarrage|^(des|a|apres) (l')?os$/.test(t)) { date = ctx.dateOS; base = 'OS de démarrage'; }
+  else return undefined;
+  if (!date) return undefined;
+  // Décalage éventuel : « 15 jours avant », « 2 mois après », « dans le mois suivant »
+  const m = /(\d+)\s*(jours?|j|semaines?|mois)\s+(avant|apres|suivant)/.exec(t);
+  if (m) {
+    const n = Number(m[1]) * (m[2].startsWith('mois') ? 30 : m[2].startsWith('semaine') ? 7 : 1);
+    date = ajouterJours(date, m[3] === 'avant' ? -n : n);
+  } else if (/dans le mois (qui )?suiv/.test(t)) date = ajouterJours(date, 30);
+  return { date, base };
+}
+
+/**
+ * Échéance d'un point : date saisie ; relative à l'OS de son lot (marché), sinon à l'OS générale ;
+ * événement rattaché à une date du chantier quand c'est possible (période de préparation, réception…).
+ */
+export function datePoint(p: PointControle, ch: Chantier, lots: Lot[], jalons: Jalon[] = []): string | undefined {
   if (p.echeance.type === 'date') return lireDate(p.echeance.valeur);
   if (p.echeance.type === 'relative') {
     const n = lireRelatif(p.echeance.valeur);
     const os = lots.find((l) => l.code === p.lot)?.dateOS || ch.dateOS;
     return n !== undefined && os ? ajouterJours(os, n) : undefined;
   }
-  return undefined; // « evenement » : texte libre
+  return echeanceEvenement(p.echeance.valeur, contexte(ch, lots, jalons, p.lot))?.date;
 }

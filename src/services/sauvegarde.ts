@@ -3,7 +3,8 @@
 import JSZip from 'jszip';
 import { db } from '../db/schema';
 import { marquerSynchronise } from '../db/suivi';
-import type { Photo } from '../domain/types';
+import type { Chantier, Jalon, Photo } from '../domain/types';
+import { analyserPreparation } from '../domain/preparation';
 
 export const FORMAT = 'kontrol-sauvegarde';
 export const VERSION_FORMAT = 1;
@@ -80,6 +81,16 @@ function migrer(c: Contenu) {
         if (l.chantierId === ch.id && l.numeroMarche === undefined) l.numeroMarche = ch.numeroMarche ?? '';
       }
       delete ch.numeroMarche;
+    }
+  }
+  if (c.schema < 5) {
+    // v5 : période de préparation lue dans les jalons, jalons mal typés corrigés
+    for (const ch of c.tables.chantiers as Chantier[]) {
+      if (ch.dureePreparation !== undefined) continue;
+      const jalons = (c.tables.jalons as Jalon[]).filter((j) => j.chantierId === ch.id).sort((a, b) => a.ordre - b.ordre);
+      const a = analyserPreparation(jalons);
+      if (a.duree !== undefined) { ch.dureePreparation = a.duree; ch.preparationComprise = a.comprise; }
+      for (const k of a.corrections) Object.assign(jalons[k.i], { reference: k.reference, jours: k.jours });
     }
   }
 }

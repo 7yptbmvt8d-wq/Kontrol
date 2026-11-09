@@ -1,7 +1,7 @@
 // Chargement de toutes les données d'un chantier pour les exports, et valeurs calculées communes.
 import { db } from '../../db/schema';
 import type { Chantier, Intervenant, Jalon, Lot, Penalite, PenaliteAppliquee, PointControle, Reserve } from '../../domain/types';
-import { aujourdHui, contexte, dateJalon, ecartJours, fmtDate, statutJalon } from '../../domain/dates';
+import { aujourdHui, calculJalon, contexte, dateJalon, ecartJours, fmtDate, statutJalon } from '../../domain/dates';
 import { GRAVITE, ORIGINE, STATUT_RESERVE, refReserve, statutAffiche } from '../../domain/statuts';
 
 export interface DonneesChantier {
@@ -48,7 +48,7 @@ export function lignesJalons(d: DonneesChantier, ref = aujourdHui()): LigneJalon
     const st = statutJalon(j, date, ref);
     const retard = st === 'en_retard' ? ecartJours(date!, ref) : 0;
     const statut = st === 'fait' ? `Fait le ${fmtDate(j.dateRealisee)}` : st === 'en_retard' ? `En retard (+${retard} j)` : st === 'a_venir' ? 'À venir' : 'Non daté';
-    const calcul = j.reference === 'autre' ? 'Date saisie' : `${j.reference === 'OS_demarrage' ? 'OS' : 'Réception'} ${j.jours < 0 ? '-' : '+'} ${Math.abs(j.jours)} j`;
+    const calcul = calculJalon(j, ctx);
     return { j, date, statut, retard, calcul };
   }).sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || a.j.ordre - b.j.ordre);
 }

@@ -209,7 +209,7 @@ function Deroule({ r, d, maj, rid }: { r: TReunion; d: D; maj: Maj; rid: number 
   const observations = r.observations.filter((o) => (o.lotCode ?? GENERAL) === lot);
   const reserves = d.reserves.filter((x) => x.lotCode === lot && x.statut !== 'leve')
     .sort((a, b) => (a.echeance ?? '9999').localeCompare(b.echeance ?? '9999'));
-  const { prioritaires: points, autresBloquants } = lot ? pointsASuivre(d.points.filter((p) => p.lot === lot), d.ch, d.lots, today) : { prioritaires: [], autresBloquants: [] };
+  const { prioritaires: points, autresBloquants } = lot ? pointsASuivre(d.points.filter((p) => p.lot === lot), d.ch, d.lots, today, d.jalons) : { prioritaires: [], autresBloquants: [] };
   const [voirBloquants, setVoirBloquants] = useState(false);
   const pens = d.appliquees.filter((p) => p.lotCode === lot);
   const aTraiter = (code: string) => r.observations.filter((o) => (o.lotCode ?? GENERAL) === code && !o.faite).length

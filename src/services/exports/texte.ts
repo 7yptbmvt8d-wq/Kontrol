@@ -1,6 +1,6 @@
 // Export texte « points non soldés » (checklist + réserves + jalons), à coller dans Claude
 // pour préparer le CR et la feuille de route de la réunion suivante.
-import { aujourdHui, datePoint, ecartJours, fmtDate, fmtHeure } from '../../domain/dates';
+import { aujourdHui, contexte, datePoint, ecartJours, fmtDate, fmtHeure } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, RESPONSABLE, TYPE_CONTROLE, bloquantNonValide, refReserve } from '../../domain/statuts';
 import { pourcentage, statistiques } from '../../domain/checklist';
 import type { PointControle } from '../../domain/types';
@@ -10,7 +10,7 @@ import { derniereAction, lignesJalons, origineTexte, parEntreprise, statutTexte,
 const HORIZON = 15; // jours : points « à faire » dont l'échéance approche
 
 export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintenant = new Date()): string {
-  const { ch, lots, points, reserves, intervenants } = d;
+  const { ch, lots, points, reserves, intervenants, jalons } = d;
   const L: string[] = [];
   const titre = (t: string) => { L.push('', t, '-'.repeat(Math.min(t.length, 60))); };
 
@@ -19,6 +19,14 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
   if (ch.site) L.push(`Site : ${ch.site}`);
   L.push(`Édité le ${fmtDate(ref)} à ${fmtHeure(maintenant.toISOString())} · phase : ${PHASE_CHANTIER[ch.phase]}` +
     `${ch.dateOS ? ` · OS générale : ${fmtDate(ch.dateOS)}` : ''} · checklist : ${pourcentage(statistiques(points))} % validée`);
+  const ctx = contexte(ch, lots, jalons);
+  if (ch.dureePreparation || ctx.reception) {
+    L.push([
+      ch.dureePreparation && `Période de préparation : ${ch.dureePreparation} j${ch.preparationComprise === false ? ' (non comprise dans le délai)' : ''}${ctx.finPreparation ? `, fin le ${fmtDate(ctx.finPreparation)}` : ''}`,
+      ctx.delai !== undefined && `délai d’exécution : ${ctx.delai} j${ctx.debutDelai ? ` à compter du ${fmtDate(ctx.debutDelai)}` : ''}`,
+      ctx.reception && `réception ${ctx.receptionReelle ? '' : 'prévisionnelle '}: ${fmtDate(ctx.reception)}`,
+    ].filter(Boolean).join(' · '));
+  }
 
   titre('MARCHÉS (1 lot = 1 marché)');
   for (const l of lots) {
@@ -29,7 +37,7 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
   }
 
   const ligne = (p: PointControle) => {
-    const date = datePoint(p, ch, lots);
+    const date = datePoint(p, ch, lots, jalons);
     const ech = date ? `${fmtDate(date)}${ecartJours(date, ref) > 0 ? ` (dépassée de ${ecartJours(date, ref)} j)` : ''}` : p.echeance.valeur || '—';
     const morceaux = [
       `[${p.lot}] ${p.articleCctp || p.id} — ${p.intitule}`,
@@ -53,7 +61,7 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
   const enCours = ouverts.filter((p) => p.etat === 'en_cours' && !p.bloquant);
   const urgents = ouverts.filter((p) => {
     if (p.bloquant || p.etat !== 'a_faire') return false;
-    const date = datePoint(p, ch, lots);
+    const date = datePoint(p, ch, lots, jalons);
     return !!date && ecartJours(ref, date) <= HORIZON;
   });
 
