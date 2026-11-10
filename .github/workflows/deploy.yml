@@ -1,8 +1,9 @@
 name: Déploiement GitHub Pages
 
+# Version en ligne = branche main uniquement. Le travail se fait sur une branche claude/… puis est reporté sur main.
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main]
   workflow_dispatch:
 
 permissions:

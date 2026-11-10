@@ -205,4 +205,7 @@ ajoutés automatiquement au build et affichés dans Réglages › Version.
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
 - Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.
-- Déploiement : `.github/workflows/deploy.yml` → GitHub Pages à chaque push sur `main` ou `claude/**`.
+- Déploiement : `.github/workflows/deploy.yml` → GitHub Pages **uniquement depuis `main`** (= version en ligne).
+  Travailler sur sa branche `claude/…`, puis mettre en ligne en reportant sur `main` (avance rapide :
+  `git push origin HEAD:main` depuis une branche à jour de `main` ; jamais de réécriture de `main`).
+  L'utilisateur a autorisé les envois sur `main` pour les mises en ligne ; s'il demande un aperçu avant, ne pas reporter.
