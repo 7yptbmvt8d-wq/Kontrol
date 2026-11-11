@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Trash2 } from 'lucide-react';
 import { db, supprimerChantier } from '../db/schema';
 import { useLive } from '../db/live';
@@ -70,23 +70,19 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <label className="rl" htmlFor="p-site">Site</label>
             <input id="p-site" className="mono" value={v.site} onChange={(e) => set('site', e.target.value)} />
           </div>
-          <div className="frow">
-            <label className="rl" htmlFor="p-os">OS générale</label>
+          <Champ id="p-os" libelle="OS n° 1 (démarrage)" aide="Date d’effet de l’ordre de service de démarrage : début de la période de préparation. Commune à tous les lots.">
             <input id="p-os" type="date" className="mono" value={v.dateOS ?? ''} onChange={(e) => set('dateOS', e.target.value)} />
-          </div>
-          <div className="frow">
-            <label className="rl" htmlFor="p-pp">Préparation (j)</label>
-            <input id="p-pp" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={prepa} placeholder="durée (CCAP)"
+          </Champ>
+          <Champ id="p-pp" libelle="Préparation (jours)" aide="Durée de la période de préparation prévue au CCAP (ex. 60 pour 2 mois).">
+            <input id="p-pp" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={prepa} placeholder="ex. 60"
               onChange={(e) => setPrepa(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} onFocus={(e) => e.target.select()} />
-          </div>
-          <div className="frow">
-            <label className="rl" htmlFor="p-dt">Début travaux</label>
+          </Champ>
+          <Champ id="p-dt" libelle="OS n° 2 (travaux)" aide={`Date d’effet de l’OS de démarrage des travaux, s’il y en a un. Vide = OS n° 1 + préparation${v.dateOS && Number(prepa) ? ` (${fmtDate(ajouterJours(v.dateOS, Number(prepa)))})` : ''}.`}>
             <input id="p-dt" type="date" className="mono" value={v.dateDebutTravaux ?? ''} onChange={(e) => set('dateDebutTravaux', e.target.value)} />
-          </div>
-          <div className="frow">
-            <label className="rl" htmlFor="p-rec">Réception</label>
+          </Champ>
+          <Champ id="p-rec" libelle="Réception réelle" aide="Date de réception prononcée (PV). Vide = réception prévisionnelle calculée.">
             <input id="p-rec" type="date" className="mono" value={v.dateReceptionReelle ?? ''} onChange={(e) => set('dateReceptionReelle', e.target.value)} />
-          </div>
+          </Champ>
           <div className="frow">
             <label className="rl" htmlFor="p-av">Avancement travaux (%)</label>
             <input id="p-av" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={avancement}
@@ -110,7 +106,7 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
 
         <div>
           <h3 className="sec-title">Marchés (un par lot)</h3>
-          <div className="ink2" style={{ marginTop: 2 }}>OS ou réception vide = date générale du chantier.</div>
+          <div className="ink2" style={{ marginTop: 2 }}>OS du lot : seulement si ce marché a reçu son propre OS de démarrage. Vide = OS n° 1 du chantier. Réception vide = celle du chantier.</div>
         </div>
         {lots?.map((l, i) => (
           <section key={l.id} className="card" style={{ padding: '10px 14px 0' }} aria-label={`Marché ${l.code}`}>
@@ -146,6 +142,19 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
         </button>
       </div>
     </Sheet>
+  );
+}
+
+/** Ligne de saisie avec une explication en dessous. */
+function Champ({ id, libelle, aide, children }: { id: string; libelle: string; aide: string; children: ReactNode }) {
+  return (
+    <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: 10 }}>
+      <div className="frow" style={{ borderBottom: 0 }}>
+        <label className="rl" htmlFor={id}>{libelle}</label>
+        {children}
+      </div>
+      <div className="ink2">{aide}</div>
+    </div>
   );
 }
 

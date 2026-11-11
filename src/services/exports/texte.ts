@@ -18,7 +18,7 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
   if (ch.operation) L.push(`Opération : ${ch.operation}`);
   if (ch.site) L.push(`Site : ${ch.site}`);
   L.push(`Édité le ${fmtDate(ref)} à ${fmtHeure(maintenant.toISOString())} · phase : ${PHASE_CHANTIER[ch.phase]}` +
-    `${ch.dateOS ? ` · OS générale : ${fmtDate(ch.dateOS)}` : ''} · checklist : ${pourcentage(statistiques(points))} % validée`);
+    `${ch.dateOS ? ` · OS de démarrage : ${fmtDate(ch.dateOS)}` : ''} · checklist : ${pourcentage(statistiques(points))} % validée`);
   const ctx = contexte(ch, lots, jalons);
   if (ch.dureePreparation || ctx.reception) {
     L.push([

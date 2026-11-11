@@ -195,7 +195,7 @@ export function pdfJalons(d: DonneesChantier, nom: string): FichierPret {
 function sectionJalons(doc: DocPdf, d: DonneesChantier) {
   doc.texte('État des jalons', { taille: 16, gras: true, couleur: ACCENT });
   doc.espace(1);
-  if (d.ch.dateOS) doc.texte(`OS générale : ${fmtDate(d.ch.dateOS)}`, { taille: 9.5, couleur: GRIS });
+  if (d.ch.dateOS) doc.texte(`OS de démarrage : ${fmtDate(d.ch.dateOS)}`, { taille: 9.5, couleur: GRIS });
   for (const l of d.lots) doc.texte(`${l.code} : marché ${l.numeroMarche || 'n° non renseigné'}${l.dateOS ? ` · OS du lot ${fmtDate(l.dateOS)}` : ''}`, { taille: 9.5, couleur: GRIS });
   doc.espace(2);
   doc.trait();
@@ -274,7 +274,7 @@ function sectionSynthese(doc: DocPdf, d: DonneesChantier) {
   doc.texte('Rapport de chantier', { taille: 18, gras: true, couleur: ACCENT });
   doc.texte(d.ch.nom, { taille: 13, gras: true });
   const infos = [d.ch.operation && `Opération : ${d.ch.operation}`, d.ch.site && `Site : ${d.ch.site}`, `Phase : ${PHASE_CHANTIER[d.ch.phase]}`,
-    d.ch.dateOS && `OS générale : ${fmtDate(d.ch.dateOS)}`].filter(Boolean).join('   ·   ');
+    d.ch.dateOS && `OS de démarrage : ${fmtDate(d.ch.dateOS)}`].filter(Boolean).join('   ·   ');
   const ctx = contexte(d.ch, d.lots, d.jalons);
   const delais = [
     d.ch.dureePreparation && `Période de préparation : ${d.ch.dureePreparation} j${d.ch.preparationComprise === false ? ' (non comprise dans le délai)' : ''}${ctx.finPreparation ? `, fin le ${fmtDate(ctx.finPreparation)}` : ''}`,
