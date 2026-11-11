@@ -112,7 +112,7 @@ export function ImportChantier() {
 
             {d && (
               <div className="field">
-                <label htmlFor="os">Date de l’OS de démarrage (facultatif, modifiable ensuite, ajustable par lot)</label>
+                <label htmlFor="os">OS n° 1 : début de la période de préparation (facultatif ; les autres dates de l’OS se saisissent ensuite dans les paramètres)</label>
                 <input id="os" type="date" className="input mono" value={dateOS} onChange={(e) => setDateOS(e.target.value)} />
               </div>
             )}

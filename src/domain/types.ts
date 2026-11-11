@@ -32,8 +32,10 @@ export interface Chantier {
   dureePreparation?: number;
   /** false = période de préparation NON comprise dans le délai d'exécution (le délai part du début des travaux). */
   preparationComprise?: boolean;
-  /** Début des travaux (ex. OS n° 2) ; vide = OS + durée de la période de préparation. */
+  /** Début d'exécution indiqué sur l'OS n° 1 (fin de la période de préparation) ; vide = OS + durée de la préparation. */
   dateDebutTravaux?: string;
+  /** Fin d'exécution indiquée sur l'OS n° 1 = réception prévisionnelle ; vide = départ du délai + délai des jalons. */
+  dateFinExecution?: string;
   compteurReserve: number; // pour numéroter R-01, R-02…
   creeLe: string;
   majLe: string;

@@ -4,7 +4,7 @@ import { db, supprimerChantier } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Chantier, Lot, PhaseChantier, TypeControle } from '../domain/types';
 import { PHASE_CHANTIER, TYPE_CONTROLE } from '../domain/statuts';
-import { ajouterJours, fmtDate } from '../domain/dates';
+import { ajouterJours, ecartJours, fmtDate } from '../domain/dates';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 import { remplacer } from '../router';
 
@@ -33,7 +33,7 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
         await db.chantiers.put({
           ...v, nom: v.nom.trim(), site: v.site.trim(), avancementTravaux: pct,
           dateOS: v.dateOS || undefined, dateReceptionReelle: v.dateReceptionReelle || undefined,
-          dureePreparation: Number(prepa) || undefined, preparationComprise: v.preparationComprise !== false, dateDebutTravaux: v.dateDebutTravaux || undefined,
+          dureePreparation: Number(prepa) || undefined, preparationComprise: v.preparationComprise !== false, dateDebutTravaux: v.dateDebutTravaux || undefined, dateFinExecution: v.dateFinExecution || undefined,
           majLe: new Date().toISOString(),
         });
         if (lots) {
@@ -70,19 +70,6 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <label className="rl" htmlFor="p-site">Site</label>
             <input id="p-site" className="mono" value={v.site} onChange={(e) => set('site', e.target.value)} />
           </div>
-          <Champ id="p-os" libelle="OS n° 1 (démarrage)" aide="Date d’effet de l’ordre de service de démarrage : début de la période de préparation. Commune à tous les lots.">
-            <input id="p-os" type="date" className="mono" value={v.dateOS ?? ''} onChange={(e) => set('dateOS', e.target.value)} />
-          </Champ>
-          <Champ id="p-pp" libelle="Préparation (jours)" aide="Durée de la période de préparation prévue au CCAP (ex. 60 pour 2 mois).">
-            <input id="p-pp" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={prepa} placeholder="ex. 60"
-              onChange={(e) => setPrepa(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} onFocus={(e) => e.target.select()} />
-          </Champ>
-          <Champ id="p-dt" libelle="OS n° 2 (travaux)" aide={`Date d’effet de l’OS de démarrage des travaux, s’il y en a un. Vide = OS n° 1 + préparation${v.dateOS && Number(prepa) ? ` (${fmtDate(ajouterJours(v.dateOS, Number(prepa)))})` : ''}.`}>
-            <input id="p-dt" type="date" className="mono" value={v.dateDebutTravaux ?? ''} onChange={(e) => set('dateDebutTravaux', e.target.value)} />
-          </Champ>
-          <Champ id="p-rec" libelle="Réception réelle" aide="Date de réception prononcée (PV). Vide = réception prévisionnelle calculée.">
-            <input id="p-rec" type="date" className="mono" value={v.dateReceptionReelle ?? ''} onChange={(e) => set('dateReceptionReelle', e.target.value)} />
-          </Champ>
           <div className="frow">
             <label className="rl" htmlFor="p-av">Avancement travaux (%)</label>
             <input id="p-av" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={avancement}
@@ -90,13 +77,43 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
           </div>
         </div>
 
-        <div>
-          <div className="lbl" style={{ marginBottom: 6 }}>Période de préparation et délai d’exécution</div>
-          <Segment<'oui' | 'non'> label="Période de préparation comprise dans le délai d’exécution" valeur={v.preparationComprise === false ? 'non' : 'oui'}
-            onChange={(x) => set('preparationComprise', x === 'oui')}
-            options={[{ v: 'oui', l: 'Comprise', aria: 'Comprise dans le délai' }, { v: 'non', l: 'Non comprise', aria: 'Non comprise dans le délai' }]} />
-          <div className="ink2" style={{ marginTop: 6 }}>{aideDelai(v, Number(prepa) || undefined)}</div>
-        </div>
+        <section className="card" style={{ padding: '12px 14px' }} aria-label="OS n° 1">
+          <h3 className="sec-title">OS n° 1</h3>
+          <div className="ink2" style={{ marginTop: 2 }}>Les trois dates portées sur l’ordre de service n° 1 (communes à tous les lots).</div>
+          <div className="frow">
+            <label className="rl" htmlFor="p-os">Début de la préparation</label>
+            <input id="p-os" type="date" className="mono" value={v.dateOS ?? ''} onChange={(e) => set('dateOS', e.target.value)} />
+          </div>
+          <div className="frow">
+            <label className="rl" htmlFor="p-dt">Début d’exécution</label>
+            <input id="p-dt" type="date" className="mono" value={v.dateDebutTravaux ?? ''} onChange={(e) => set('dateDebutTravaux', e.target.value)} />
+          </div>
+          <div className="frow" style={{ borderBottom: 0 }}>
+            <label className="rl" htmlFor="p-fin">Fin d’exécution</label>
+            <input id="p-fin" type="date" className="mono" value={v.dateFinExecution ?? ''} onChange={(e) => set('dateFinExecution', e.target.value)} />
+          </div>
+          <div className="ink2" style={{ fontWeight: 600 }}>{resumeOS(v)}</div>
+        </section>
+
+        {!v.dateDebutTravaux && v.dateOS && (
+          // Sans date de début d'exécution sur l'OS : calcul depuis la durée de préparation du CCAP
+          <div>
+            <div className="lbl" style={{ marginBottom: 6 }}>Sans date de début d’exécution</div>
+            <div className="frow">
+              <label className="rl" htmlFor="p-pp">Préparation (jours)</label>
+              <input id="p-pp" type="text" inputMode="numeric" pattern="[0-9]*" className="mono" value={prepa} placeholder="durée du CCAP"
+                onChange={(e) => setPrepa(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} onFocus={(e) => e.target.select()} />
+            </div>
+            <Segment<'oui' | 'non'> label="Période de préparation comprise dans le délai d’exécution" valeur={v.preparationComprise === false ? 'non' : 'oui'}
+              onChange={(x) => set('preparationComprise', x === 'oui')}
+              options={[{ v: 'oui', l: 'Comprise', aria: 'Comprise dans le délai' }, { v: 'non', l: 'Non comprise', aria: 'Non comprise dans le délai' }]} />
+            <div className="ink2" style={{ marginTop: 6 }}>{aideDelai(v, Number(prepa) || undefined)}</div>
+          </div>
+        )}
+
+        <Champ id="p-rec" libelle="Réception réelle" aide="Date de réception prononcée (PV). Vide = fin d’exécution de l’OS (réception prévisionnelle).">
+          <input id="p-rec" type="date" className="mono" value={v.dateReceptionReelle ?? ''} onChange={(e) => set('dateReceptionReelle', e.target.value)} />
+        </Champ>
 
         <div>
           <div className="lbl" style={{ marginBottom: 6 }}>Phase</div>
@@ -158,14 +175,26 @@ function Champ({ id, libelle, aide, children }: { id: string; libelle: string; a
   );
 }
 
+/** Résumé des dates de l'OS n° 1 : durées de la période de préparation et du délai d'exécution. */
+function resumeOS(v: Chantier): string {
+  if (!v.dateOS) return 'Saisissez au moins le début de la préparation : jalons et échéances se calculent ensuite.';
+  const m = [] as string[];
+  if (v.dateDebutTravaux) m.push(`Préparation : ${ecartJours(v.dateOS, v.dateDebutTravaux)} j`);
+  if (v.dateDebutTravaux && v.dateFinExecution) {
+    const j = ecartJours(v.dateDebutTravaux, v.dateFinExecution);
+    m.push(`délai d’exécution : ${j} j (≈ ${(j / 30.4).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mois)`);
+  } else if (!v.dateFinExecution) m.push('fin d’exécution vide : calculée avec le délai du CCAP');
+  return m.join(' · ') || ' ';
+}
+
 /** Explication du calcul : fin de la période de préparation, départ du délai d'exécution. */
 function aideDelai(v: Chantier, duree?: number): string {
   if (!v.dateOS) return 'Saisissez l’OS de démarrage : les dates se calculent ensuite (période de préparation, délai, réception).';
   const fin = v.dateDebutTravaux || (duree ? ajouterJours(v.dateOS, duree) : undefined);
   const morceaux = [
-    fin ? `Fin de la période de préparation / début des travaux : ${fmtDate(fin)}${v.dateDebutTravaux ? ' (date saisie)' : ` (OS + ${duree} j)`}.` : 'Durée de la période de préparation non renseignée.',
+    fin ? `Fin de la période de préparation / début d’exécution : ${fmtDate(fin)}${v.dateDebutTravaux ? ' (date saisie)' : ` (OS + ${duree} j)`}.` : 'Durée de la période de préparation non renseignée.',
     v.preparationComprise === false
-      ? `Le délai d’exécution part du début des travaux${fin ? ` (${fmtDate(fin)})` : ''}.`
+      ? `Le délai d’exécution part du début d’exécution${fin ? ` (${fmtDate(fin)})` : ''}.`
       : `Le délai d’exécution part de l’OS (${fmtDate(v.dateOS)}), période de préparation comprise.`,
   ];
   return morceaux.join(' ');

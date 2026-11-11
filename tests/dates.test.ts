@@ -98,7 +98,7 @@ describe('période de préparation et échéances en texte', () => {
     expect(dateJalon(jalons[0], c)).toBe('2026-10-05');
     expect(dateJalon(jalons[1], c)).toBe(c.reception);
     expect(dateJalon(jalons[2], c)).toBe('2026-09-05'); // l'avance : OS + 30, pas début des travaux + 30
-    expect(calculJalon(jalons[1], c)).toBe('Début des travaux + 480 j');
+    expect(calculJalon(jalons[1], c)).toBe('Début d’exécution + 480 j');
     expect(calculJalon(jalons[0], c)).toBe('Fin de préparation');
   });
   it('PP comprise (CCAG) : le délai part de l’OS ; début des travaux saisi prioritaire', () => {
@@ -106,6 +106,20 @@ describe('période de préparation et échéances en texte', () => {
     expect([c.finPreparation, c.debutDelai, c.reception]).toEqual(['2026-10-05', '2026-08-06', ajouterJours('2026-08-06', 480)]);
     const c2 = contexte({ ...chPP, dateDebutTravaux: '2026-10-12' }, [], jalons);
     expect([c2.finPreparation, c2.debutDelai]).toEqual(['2026-10-12', '2026-10-12']);
+  });
+  it('OS n° 1 avec ses trois dates : début de PP, début et fin d’exécution', async () => {
+    const { calculJalon } = await import('../src/domain/dates');
+    const ch3: Chantier = { ...ch, dateOS: '2026-08-06', dateDebutTravaux: '2026-10-06', dateFinExecution: '2028-01-26', dureePreparation: 60, preparationComprise: false };
+    const c = contexte(ch3, [lot('GO')], jalons);
+    expect([c.finPreparation, c.debutDelai, c.reception]).toEqual(['2026-10-06', '2026-10-06', '2028-01-26']);
+    expect(c.delai).toBe(ecartJours('2026-10-06', '2028-01-26'));
+    expect(dateJalon(jalons[1], c)).toBe('2028-01-26'); // délai global = fin d'exécution de l'OS
+    expect(calculJalon(jalons[1], c)).toBe('Fin d’exécution (OS n° 1)');
+    expect(dateJalon(jalons[0], c)).toBe('2026-10-06'); // fin de la PP = début d'exécution
+    // Même résultat pour un marché sans OS propre ; « comprise » sans effet quand les dates sont données
+    expect(contexte({ ...ch3, preparationComprise: true }, [lot('GO')], jalons, 'GO').reception).toBe('2028-01-26');
+    expect(datePoint(pt('avant fin de la période de préparation'), ch3, [lot('GO')], jalons)).toBe('2026-10-06');
+    expect(datePoint(pt('au plus tard à la demande de réception'), ch3, [lot('GO')], jalons)).toBe('2028-01-26');
   });
   it('échéances en texte rattachées aux dates du chantier', () => {
     const d = (v: string) => datePoint(pt(v), chPP, [lot('GO')], jalons);

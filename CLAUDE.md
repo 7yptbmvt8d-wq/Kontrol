@@ -52,9 +52,11 @@ Les maquettes donnent la forme ; le cahier des charges donne les fonctions et le
   - contexte d'un lot : OS du lot (sinon OS générale) ; délai = plus grand jalon `delai` rapporté à l'OS propre au lot,
     sinon commun ; réception = réelle du lot › (si ni OS ni délai propres) réception de l'ensemble › OS du lot + délai ;
   - contexte de l'ensemble : OS générale, délai commun, réception réelle du chantier ou OS + délai ;
-  - période de préparation (chantier : `dureePreparation`, `preparationComprise`, `dateDebutTravaux` = OS n° 2 facultative) :
-    fin de PP = début des travaux saisi, sinon OS + durée ; **départ du délai** = OS, ou fin de PP si la PP n'est pas
-    comprise dans le délai (CCAP) ; réception prévisionnelle = départ du délai + délai ;
+  - **OS n° 1 = trois dates** (pratique de l'utilisateur) : début de la période de préparation (`dateOS`), début
+    d'exécution (`dateDebutTravaux`), fin d'exécution (`dateFinExecution`). Fin de PP = début d'exécution ; départ du délai
+    = début d'exécution ; délai = écart des deux ; réception prévisionnelle = fin d'exécution ; le jalon du délai
+    d'exécution (plus long jalon « delai ») tombe à la fin d'exécution. Sans ces dates (repli) : `dureePreparation` et
+    `preparationComprise` (lus dans les jalons) → fin de PP = OS + durée, départ du délai = OS ou fin de PP ;
   - `OS_demarrage` → OS + jours (jalons « delai » : départ du délai + jours) ; `fin_preparation` → fin de PP + jours ;
     `reception` → réception + jours ; `autre` → date saisie dans l'app (`dateFixe`) ; libellé : `calculJalon()` ;
   - un jalon propre à un lot se calcule dans le contexte de ce lot ; un jalon commun dans celui de l'ensemble

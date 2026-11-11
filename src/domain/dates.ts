@@ -89,8 +89,10 @@ export function retard(iso: string | undefined, ref = aujourdHui()): number {
 export interface Contexte {
   dateOS?: string; // OS de démarrage (début de la période de préparation le cas échéant)
   finPreparation?: string; // fin de la période de préparation = début des travaux
-  debutDelai?: string; // départ du délai d'exécution : OS, ou début des travaux si la préparation n'y est pas comprise
+  debutDelai?: string; // départ du délai d'exécution : début d'exécution de l'OS, sinon OS ou fin de préparation (CCAP)
   delai?: number; // jours
+  finExecution?: string; // fin d'exécution indiquée sur l'OS n° 1
+  delaiJalons?: number; // plus long jalon « délai » (le délai d'exécution du CCAP)
   reception?: string; // réelle si saisie, sinon prévisionnelle
   receptionReelle: boolean;
 }
@@ -103,11 +105,13 @@ function delaiDe(jalons: Jalon[], lotCode: string | undefined): number | undefin
 
 /**
  * Fin de la période de préparation et départ du délai d'exécution, à partir d'une OS.
- * La date de début des travaux saisie (OS n° 2) vaut pour l'ensemble ; un lot avec sa propre OS la recalcule.
+ * Les dates de l'OS n° 1 (début d'exécution) valent pour l'ensemble ; un lot avec sa propre OS les recalcule.
+ * Sans date de début d'exécution : OS + durée de préparation, et le délai part de l'OS si la préparation y est comprise.
  */
 function bornes(ch: Chantier, os: string | undefined, osPropre: boolean) {
-  const finPreparation = (!osPropre && ch.dateDebutTravaux) || (os && ch.dureePreparation ? ajouterJours(os, ch.dureePreparation) : undefined);
-  const debutDelai = ch.preparationComprise === false ? (finPreparation ?? os) : os;
+  const debutExecution = osPropre ? undefined : ch.dateDebutTravaux || undefined;
+  const finPreparation = debutExecution ?? (os && ch.dureePreparation ? ajouterJours(os, ch.dureePreparation) : undefined);
+  const debutDelai = debutExecution ?? (ch.preparationComprise === false ? (finPreparation ?? os) : os);
   return { finPreparation, debutDelai };
 }
 
@@ -119,20 +123,33 @@ function bornes(ch: Chantier, os: string | undefined, osPropre: boolean) {
  * - Départ du délai : l'OS, ou la fin de la période de préparation si elle n'est pas comprise dans le délai (CCAP).
  */
 export function contexte(ch: Chantier, lots: Lot[], jalons: Jalon[], lotCode?: string): Contexte {
-  const delaiCommun = delaiDe(jalons, undefined);
+  const delaiJalons = delaiDe(jalons, undefined);
   const commun = bornes(ch, ch.dateOS, false);
-  const recCommune = ch.dateReceptionReelle ?? (commun.debutDelai && delaiCommun !== undefined ? ajouterJours(commun.debutDelai, delaiCommun) : undefined);
+  // Fin d'exécution de l'OS n° 1 : elle fixe le délai et la réception prévisionnelle de l'ensemble
+  const finExecution = ch.dateFinExecution || undefined;
+  const delaiCommun = finExecution && commun.debutDelai ? ecartJours(commun.debutDelai, finExecution) : delaiJalons;
+  const recCommune = ch.dateReceptionReelle
+    ?? finExecution ?? (commun.debutDelai && delaiJalons !== undefined ? ajouterJours(commun.debutDelai, delaiJalons) : undefined);
   const lot = lotCode ? lots.find((l) => l.code === lotCode) : undefined;
-  if (!lot) return { dateOS: ch.dateOS, ...commun, delai: delaiCommun, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  if (!lot) return { dateOS: ch.dateOS, ...commun, delai: delaiCommun, finExecution, delaiJalons, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
   const dateOS = lot.dateOS || ch.dateOS;
   const b = bornes(ch, dateOS, !!lot.dateOS);
   const delaiPropre = delaiDe(jalons, lot.code);
-  const delai = delaiPropre ?? delaiCommun;
-  const base = { dateOS, ...b, delai };
-  if (lot.dateReceptionReelle) return { ...base, reception: lot.dateReceptionReelle, receptionReelle: true };
-  if (!lot.dateOS && delaiPropre === undefined) return { ...base, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
-  return { ...base, reception: b.debutDelai && delai !== undefined ? ajouterJours(b.debutDelai, delai) : undefined, receptionReelle: false };
+  const base = { dateOS, ...b };
+  if (!lot.dateOS && delaiPropre === undefined) {
+    // Marché sans OS ni délai propres : mêmes dates que l'ensemble
+    const ens = { ...base, delai: delaiCommun, finExecution, delaiJalons };
+    return lot.dateReceptionReelle ? { ...ens, reception: lot.dateReceptionReelle, receptionReelle: true } : { ...ens, reception: recCommune, receptionReelle: !!ch.dateReceptionReelle };
+  }
+  const delai = delaiPropre ?? delaiJalons;
+  const ens = { ...base, delai, delaiJalons: delai };
+  if (lot.dateReceptionReelle) return { ...ens, reception: lot.dateReceptionReelle, receptionReelle: true };
+  return { ...ens, reception: b.debutDelai && delai !== undefined ? ajouterJours(b.debutDelai, delai) : undefined, receptionReelle: false };
 }
+
+/** Le jalon du délai d'exécution (le plus long jalon « délai ») tombe à la fin d'exécution de l'OS n° 1 quand elle est saisie. */
+const estFinExecution = (j: Jalon, ctx: Contexte) =>
+  !!ctx.finExecution && j.categorie === 'delai' && j.reference === 'OS_demarrage' && j.jours === ctx.delaiJalons;
 
 /** Date de départ d'un jalon : les jalons « délai » rapportés à l'OS comptent à partir du départ du délai d'exécution. */
 function departJalon(j: Jalon, ctx: Contexte): string | undefined {
@@ -146,6 +163,7 @@ function departJalon(j: Jalon, ctx: Contexte): string | undefined {
 
 export function dateJalon(j: Jalon, ctx: Contexte): string | undefined {
   if (j.reference === 'autre') return j.dateFixe;
+  if (estFinExecution(j, ctx)) return ctx.finExecution;
   const d = departJalon(j, ctx);
   return d ? ajouterJours(d, j.jours) : undefined;
 }
@@ -153,9 +171,10 @@ export function dateJalon(j: Jalon, ctx: Contexte): string | undefined {
 /** Libellé du calcul d'un jalon : « OS + 30 j », « Début des travaux + 480 j », « Fin de préparation », « Date saisie ». */
 export function calculJalon(j: Jalon, ctx: Contexte): string {
   if (j.reference === 'autre') return 'Date saisie';
+  if (estFinExecution(j, ctx)) return 'Fin d’exécution (OS n° 1)';
   const base = j.reference === 'reception' ? 'Réception'
     : j.reference === 'fin_preparation' ? 'Fin de préparation'
-    : j.categorie === 'delai' && ctx.debutDelai && ctx.debutDelai !== ctx.dateOS ? 'Début des travaux' : 'OS';
+    : j.categorie === 'delai' && ctx.debutDelai && ctx.debutDelai !== ctx.dateOS ? 'Début d’exécution' : 'OS';
   return j.jours ? `${base} ${j.jours < 0 ? '−' : '+'} ${Math.abs(j.jours)} j` : base;
 }
 

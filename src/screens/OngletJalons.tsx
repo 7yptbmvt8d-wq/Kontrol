@@ -165,9 +165,9 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
       <div className="ink2" style={{ marginTop: 8 }}>
         {ecoules < 0 ? <>{enPreparation ? 'Période de préparation · travaux' : 'Démarrage'} dans <span className="mono">{-ecoules}</span> j</> : <>Temps <span className="mono">{pctTemps} %</span></>} · travaux <span className="mono">{av} %</span>
       </div>
-      {ch.dureePreparation ? (
+      {ctx.finPreparation && ctx.finPreparation > ctx.dateOS ? (
         <div className="ink2">
-          Préparation <span className="mono">{ch.dureePreparation}</span> j{ch.preparationComprise === false ? ' (hors délai)' : ''} · fin <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.finPreparation)}</span>
+          Préparation <span className="mono">{ecartJours(ctx.dateOS, ctx.finPreparation)}</span> j · début d’exécution <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.finPreparation)}</span>
         </div>
       ) : null}
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 2, flexWrap: 'wrap' }}>
@@ -176,7 +176,7 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
           OS{osPropre ? ' du lot' : ''} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.dateOS)}</span>
           <Pencil size={18} strokeWidth={2.2} color="var(--accent)" aria-hidden />
         </button>
-        <span className="ink2">{ctx.receptionReelle ? 'réception' : 'fin'} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.reception)}</span></span>
+        <span className="ink2">{ctx.receptionReelle ? 'réception' : 'fin d’exécution'} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.reception)}</span></span>
       </div>
     </section>
   );
