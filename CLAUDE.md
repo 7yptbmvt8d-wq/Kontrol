@@ -97,6 +97,8 @@ Les maquettes donnent la forme ; le cahier des charges donne les fonctions et le
 Validation : `src/domain/import.ts` (erreurs bloquantes + avertissements, chemin précis du champ ;
 tolère BOM et nombres à la place de textes ; ancien `chantier.numero_marche` accepté pour un lot unique).
 Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 jalons dont 1 propre au lot CVC).
+Prompt d'extraction (à coller dans Claude avec CCTP, CCAP, AE) : `src/domain/promptExtraction.ts`, rédigé par l'utilisateur
+et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier. **À tenir aligné sur le format d'import.**
 
 ## Arborescence
 - `src/db/schema.ts` — Dexie (tables chantiers, lots, intervenants, points, reserves, jalons, penalites, penalitesAppliquees, reunions, photos, reglages).

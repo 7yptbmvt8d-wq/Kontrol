@@ -15,6 +15,17 @@ describe('validation', () => {
     expect(r.donnees!.jalons).toHaveLength(6);
     expect(r.donnees!.jalons.find((j) => j.id === 'J-PEXE')!.lot).toBe('CVC');
   });
+  it('accepte les consignes du prompt d’extraction (fin_preparation, lot "" = commun)', async () => {
+    const { PROMPT_EXTRACTION } = await import('../src/domain/promptExtraction');
+    for (const ref of ['OS_demarrage', 'fin_preparation', 'reception', 'autre']) expect(PROMPT_EXTRACTION).toContain(ref);
+    const d = JSON.parse(exemple);
+    d.jalons.push({ id: 'J-DOCPREP', lot: '', categorie: 'documentaire', intitule: 'Documents de préparation', article_ccap: '', echeance: { reference: 'fin_preparation', jours: 0 } });
+    d.penalites[0].lot = '';
+    const r = validerImport(JSON.stringify(d));
+    expect(r.erreurs).toEqual([]);
+    const j = r.donnees!.jalons.find((x) => x.id === 'J-DOCPREP')!;
+    expect([j.lot, j.echeance.reference]).toEqual([undefined, 'fin_preparation']);
+  });
   it('tolère le BOM et les nombres à la place de textes', () => {
     const d = JSON.parse(exemple);
     d.chantier.lots[0].numero_marche = 412;

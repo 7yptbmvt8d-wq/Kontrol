@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { FileUp, FlaskConical, CircleAlert, TriangleAlert, CircleCheck } from 'lucide-react';
-import { CodeLot, Header, toast } from '../components/ui';
+import { FileUp, FlaskConical, CircleAlert, TriangleAlert, CircleCheck, ClipboardCopy, ScrollText } from 'lucide-react';
+import { CodeLot, Header, Sheet, toast } from '../components/ui';
+import { PROMPT_EXTRACTION } from '../domain/promptExtraction';
 import { db } from '../db/schema';
 import { importerChantier, validerImport, type Probleme, type ResultatValidation } from '../domain/import';
 import { remplacer, retour } from '../router';
@@ -15,6 +16,7 @@ export function ImportChantier() {
   const [doublon, setDoublon] = useState(false);
   const [dateOS, setDateOS] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const [voirPrompt, setVoirPrompt] = useState(false);
 
   const analyser = async (texte: string, nom: string) => {
     const r = validerImport(texte);
@@ -49,11 +51,31 @@ export function ImportChantier() {
 
   const d = res?.donnees;
 
+  const copierPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(PROMPT_EXTRACTION);
+      toast('Prompt copié : collez-le dans Claude avec les pièces du marché');
+    } catch {
+      setVoirPrompt(true); // copie refusée : texte affiché pour une sélection manuelle
+    }
+  };
+
   return (
     <main className="screen">
       <Header sub="Import JSON" title="Nouveau chantier" onBack={() => retour('')} backLabel="Retour à mes chantiers" />
 
       <div className="pad stack" style={{ marginTop: 16 }}>
+        <section className="card stack" style={{ gap: 10 }} aria-label="Obtenir le fichier JSON">
+          <h2 className="sec-title">1. Obtenir le fichier JSON</h2>
+          <div className="ink2">Copiez le prompt, collez-le dans Claude avec le CCTP, le CCAP et les actes d’engagement, puis enregistrez le fichier JSON produit.</div>
+          <button type="button" className="btn sec block tap" onClick={copierPrompt}>
+            <ClipboardCopy size={22} strokeWidth={2.2} aria-hidden />Copier le prompt d’extraction
+          </button>
+          <button type="button" className="btn sec block tap" onClick={() => setVoirPrompt(true)}>
+            <ScrollText size={22} strokeWidth={2.2} aria-hidden />Lire le prompt
+          </button>
+        </section>
+        <h2 className="sec-title" style={{ marginTop: 8 }}>2. Importer le fichier</h2>
         <input ref={input} type="file" accept=".json,application/json" className="sr-only" tabIndex={-1} aria-hidden
           onChange={(e) => lireFichier(e.target.files?.[0])} />
         <button type="button" className="btn sec-acc block tap" style={{ height: 'var(--btn-h)' }} onClick={() => input.current?.click()}>
@@ -129,6 +151,12 @@ export function ImportChantier() {
             </button>
           </div>
         </>
+      )}
+      {voirPrompt && (
+        <Sheet titre="Prompt d’extraction" sousTitre="À coller dans Claude avec les pièces du marché" onClose={() => setVoirPrompt(false)}
+          pied={<button type="button" className="btn block tap" onClick={copierPrompt}><ClipboardCopy size={22} strokeWidth={2.2} aria-hidden />Copier</button>}>
+          <pre className="prompt">{PROMPT_EXTRACTION}</pre>
+        </Sheet>
       )}
     </main>
   );
