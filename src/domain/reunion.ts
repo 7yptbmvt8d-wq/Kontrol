@@ -1,7 +1,7 @@
 // Mode réunion : participants, actions reprises, changements depuis la réunion précédente, compte rendu (texte pour Claude).
 import type { Intervenant, Jalon, Lot, Observation, Participant, PointControle, Reunion, TypeReunion, Chantier } from './types';
 import { ROLE_INTERVENANT, ETAT_POINT, GRAVITE, bloquantNonValide, refReserve, statutAffiche, STATUT_RESERVE } from './statuts';
-import { aujourdHui, datePoint, ecartJours, fmtDate, jourLocal, fmtHeure } from './dates';
+import { aujourdHui, contexte, datePoint, ecartJours, fmtDate, jourLocal, fmtHeure, texteProlongations } from './dates';
 import { pourcentage, statistiques } from './checklist';
 import { STATUT_PENALITE, euros, pluriel } from './penalites';
 import type { DonneesChantier } from '../services/exports/donnees';
@@ -130,6 +130,10 @@ export function compteRendu(r: Reunion, d: DonneesChantier, precedente?: Reunion
   if (d.ch.site) L.push(`Site : ${d.ch.site}`);
   if (r.lieu) L.push(`Lieu : ${r.lieu}`);
   L.push(`Avancement de la checklist : ${pourcentage(statistiques(d.points))} %`);
+  const ctx = contexte(d.ch, d.lots, d.jalons);
+  if (ctx.finExecution && !ctx.receptionReelle) {
+    L.push(`Fin d’exécution : ${fmtDate(ctx.finExecution)}${ctx.prolongation ? ` (dont ${ctx.prolongation} j de prolongation : ${texteProlongations(d.ch)})` : ''}`);
+  }
 
   titre('1. PRÉSENCES');
   const nom = (p: Participant) => (p.role || p.lotCode ? `${p.nom} (${[p.role, p.lotCode].filter(Boolean).join(' ')})` : p.nom);

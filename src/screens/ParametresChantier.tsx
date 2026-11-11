@@ -89,7 +89,7 @@ export function ParametresChantier({ chantier, onClose }: { chantier: Chantier; 
             <input id="p-dt" type="date" className="mono" value={v.dateDebutTravaux ?? ''} onChange={(e) => set('dateDebutTravaux', e.target.value)} />
           </div>
           <div className="frow" style={{ borderBottom: 0 }}>
-            <label className="rl" htmlFor="p-fin">Fin d’exécution</label>
+            <label className="rl" htmlFor="p-fin">{v.prolongations?.length ? 'Fin d’exécution initiale' : 'Fin d’exécution'}</label>
             <input id="p-fin" type="date" className="mono" value={v.dateFinExecution ?? ''} onChange={(e) => set('dateFinExecution', e.target.value)} />
           </div>
           <div className="ink2" style={{ fontWeight: 600 }}>{resumeOS(v)}</div>
@@ -184,6 +184,8 @@ function resumeOS(v: Chantier): string {
     const j = ecartJours(v.dateDebutTravaux, v.dateFinExecution);
     m.push(`délai d’exécution : ${j} j (≈ ${(j / 30.4).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} mois)`);
   } else if (!v.dateFinExecution) m.push('fin d’exécution vide : calculée avec le délai du CCAP');
+  const prol = (v.prolongations ?? []).filter((p) => !p.lotCode).reduce((t, p) => t + p.jours, 0);
+  if (prol && v.dateFinExecution) m.push(`prolongations : +${prol} j → fin d’exécution le ${fmtDate(ajouterJours(v.dateFinExecution, prol))} (onglet Jalons)`);
   return m.join(' · ') || ' ';
 }
 

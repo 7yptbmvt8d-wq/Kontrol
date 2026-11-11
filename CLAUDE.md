@@ -57,6 +57,12 @@ Les maquettes donnent la forme ; le cahier des charges donne les fonctions et le
     = début d'exécution ; délai = écart des deux ; réception prévisionnelle = fin d'exécution ; le jalon du délai
     d'exécution (plus long jalon « delai ») tombe à la fin d'exécution. Sans ces dates (repli) : `dureePreparation` et
     `preparationComprise` (lus dans les jalons) → fin de PP = OS + durée, départ du délai = OS ou fin de PP ;
+  - **prolongations** (`chantier.prolongations` : acte, date, jours, motif, marché facultatif ; écran `Prolongations`
+    depuis la carte du délai, onglet Jalons) : ajoutées à la fin d'exécution (communes → tous les marchés, propres → ce
+    marché) ; historique dans le rapport PDF, le texte pour Claude et le CR (`texteProlongations`) ;
+  - **alerte** `alerteFinExecution` (`components/AlerteFin.tsx`, accueil + carte du délai) : « OPR à programmer »
+    `PREAVIS_OPR` = 60 j avant la fin d'exécution, puis « fin d'exécution dépassée » ; muette si réception réelle
+    ou phase OPR / GPA / clos ;
   - `OS_demarrage` → OS + jours (jalons « delai » : départ du délai + jours) ; `fin_preparation` → fin de PP + jours ;
     `reception` → réception + jours ; `autre` → date saisie dans l'app (`dateFixe`) ; libellé : `calculJalon()` ;
   - un jalon propre à un lot se calcule dans le contexte de ce lot ; un jalon commun dans celui de l'ensemble
@@ -192,6 +198,7 @@ Exemple : `exemples/chantier-exemple.json` (2 lots = 2 marchés, 15 points, 6 ja
 V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2 : mode réunion.
 V1.3 : dossiers chantiers sur Google Drive (rapport PDF, Excel, photos).
 V1.4 : période de préparation (comprise ou non dans le délai), échéances en texte rattachées aux dates du chantier.
+V1.5 : OS n° 1 à trois dates. V1.6 : prolongations de délai, alerte « OPR à programmer » à J-60.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)

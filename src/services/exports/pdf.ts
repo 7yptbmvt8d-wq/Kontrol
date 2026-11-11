@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import { db } from '../../db/schema';
 import type { Reserve } from '../../domain/types';
-import { aujourdHui, contexte, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure } from '../../domain/dates';
+import { aujourdHui, contexte, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure, texteProlongations } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, PHASE_CONTROLE, bloquantNonValide, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
 import { estValide, grouper, statistiques } from '../../domain/checklist';
 import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier } from './donnees';
@@ -281,8 +281,10 @@ function sectionSynthese(doc: DocPdf, d: DonneesChantier) {
     ctx.delai !== undefined && `Délai d’exécution : ${ctx.delai} j${ctx.debutDelai ? ` à compter du ${fmtDate(ctx.debutDelai)}` : ''}`,
     ctx.reception && `Réception ${ctx.receptionReelle ? '' : 'prévisionnelle '}: ${fmtDate(ctx.reception)}`,
   ].filter(Boolean).join('   ·   ');
+  const prolongations = texteProlongations(d.ch);
   doc.texte(infos, { taille: 9.5, couleur: GRIS });
   if (delais) doc.texte(delais, { taille: 9.5, couleur: GRIS });
+  if (prolongations) doc.texte(`Prolongations de délai : ${prolongations}`, { taille: 9.5, couleur: GRIS });
   doc.espace(2);
   doc.texte('Marchés', { taille: 12, gras: true });
   for (const l of d.lots) {

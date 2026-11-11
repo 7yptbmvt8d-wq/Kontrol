@@ -121,6 +121,25 @@ describe('période de préparation et échéances en texte', () => {
     expect(datePoint(pt('avant fin de la période de préparation'), ch3, [lot('GO')], jalons)).toBe('2026-10-06');
     expect(datePoint(pt('au plus tard à la demande de réception'), ch3, [lot('GO')], jalons)).toBe('2028-01-26');
   });
+  it('prolongations de délai et alerte OPR à 60 jours', async () => {
+    const { alerteFinExecution, calculJalon } = await import('../src/domain/dates');
+    const ch3: Chantier = { ...ch, dateOS: '2026-08-06', dateDebutTravaux: '2026-10-06', dateFinExecution: '2028-01-26',
+      prolongations: [{ id: 'a', acte: 'Avenant n° 1', jours: 30, motif: 'Intempéries' }, { id: 'b', acte: 'OS n° 4', jours: 10, motif: '', lotCode: 'CVC' }] };
+    const lots = [lot('GO'), lot('CVC')];
+    const c = contexte(ch3, lots, jalons);
+    expect([c.finExecution, c.reception, c.prolongation]).toEqual(['2028-02-25', '2028-02-25', 30]);
+    expect(dateJalon(jalons[1], c)).toBe('2028-02-25');
+    expect(calculJalon(jalons[1], c)).toBe('Fin d’exécution (OS n° 1) + 30 j de prolongation');
+    // Prolongation propre au marché CVC : s'ajoute pour ce marché seulement
+    expect(contexte(ch3, lots, jalons, 'CVC').reception).toBe('2028-03-06');
+    expect(contexte(ch3, lots, jalons, 'GO').reception).toBe('2028-02-25');
+    // Alerte : rien à J-61, « OPR à programmer » à J-60, « dépassée » après ; rien une fois en phase OPR
+    expect(alerteFinExecution(c, 'execution', '2027-12-26')).toBeUndefined();
+    expect(alerteFinExecution(c, 'execution', '2027-12-27')).toEqual({ niveau: 'a_programmer', jours: 60, date: '2028-02-25' });
+    expect(alerteFinExecution(c, 'execution', '2028-03-01')).toEqual({ niveau: 'depassee', jours: 5, date: '2028-02-25' });
+    expect(alerteFinExecution(c, 'opr', '2028-02-01')).toBeUndefined();
+    expect(alerteFinExecution(contexte({ ...ch3, dateReceptionReelle: '2028-02-20' }, lots, jalons), 'execution', '2028-02-01')).toBeUndefined();
+  });
   it('échéances en texte rattachées aux dates du chantier', () => {
     const d = (v: string) => datePoint(pt(v), chPP, [lot('GO')], jalons);
     const rec = ajouterJours('2026-10-05', 480);

@@ -1,7 +1,8 @@
 import { Plus, Settings } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
-import { fmtJourLong } from '../domain/dates';
+import { alerteFinExecution, contexte, fmtJourLong } from '../domain/dates';
+import { AlerteFin, type Alerte } from '../components/AlerteFin';
 import { PHASE_CHANTIER, bloquantNonValide, estOuverte, statutAffiche } from '../domain/statuts';
 import { statistiques, type Stats } from '../domain/checklist';
 import { BarreChecklist } from '../components/BarreChecklist';
@@ -11,13 +12,19 @@ import { PuceDrive } from '../components/Drive';
 import { filtrerReservesSur } from './OngletReserves';
 import { filtrerChecklistSur } from './OngletChecklist';
 
-interface Compteurs { ouvertes: number; retard: number; bloquants: number; st: Stats }
+interface Compteurs { ouvertes: number; retard: number; bloquants: number; st: Stats; alerte?: Alerte }
 
 export function Accueil() {
   const data = useLive('accueil', async () => {
-    const [chantiers, reserves, points] = await Promise.all([db.chantiers.toArray(), db.reserves.toArray(), db.points.toArray()]);
+    const [chantiers, reserves, points, lots, jalons] = await Promise.all([
+      db.chantiers.toArray(), db.reserves.toArray(), db.points.toArray(), db.lots.toArray(), db.jalons.toArray(),
+    ]);
     const par = new Map<number, Compteurs>();
-    for (const c of chantiers) par.set(c.id!, { ouvertes: 0, retard: 0, bloquants: 0, st: statistiques(points.filter((p) => p.chantierId === c.id)) });
+    for (const c of chantiers) {
+      // Fin d'exécution proche (OPR à programmer) ou dépassée
+      const ctx = contexte(c, lots.filter((l) => l.chantierId === c.id), jalons.filter((j) => j.chantierId === c.id));
+      par.set(c.id!, { ouvertes: 0, retard: 0, bloquants: 0, st: statistiques(points.filter((p) => p.chantierId === c.id)), alerte: alerteFinExecution(ctx, c.phase) });
+    }
     for (const r of reserves) {
       const k = par.get(r.chantierId);
       if (!k || !estOuverte(r)) continue;
@@ -71,6 +78,7 @@ export function Accueil() {
                 <div style={{ marginTop: 12 }}>
                   <BarreChecklist st={k.st} hauteur={8} />
                 </div>
+                {k.alerte && <div style={{ marginTop: 10 }}><AlerteFin a={k.alerte} /></div>}
               </a>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, padding: '0 16px 16px' }}>
                 <Tuile n={k.ouvertes} libelle={k.ouvertes > 1 ? 'réserves ouvertes' : 'réserve ouverte'} ton="b"

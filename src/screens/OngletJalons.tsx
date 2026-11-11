@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { CategorieJalon, Chantier, Jalon, RefJalon } from '../domain/types';
-import { aujourdHui, calculJalon, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
+import { alerteFinExecution, aujourdHui, calculJalon, contexte, dateJalon, ecartJours, fmtCourt, fmtDate, statutJalon, type Contexte, type StatutJalon } from '../domain/dates';
+import { AlerteFin } from '../components/AlerteFin';
+import { Prolongations } from './Prolongations';
 import { CodeLot, Segment, Sheet, toast } from '../components/ui';
 
 const TON: Record<StatutJalon, { dot: string; date: string; libelle: string }> = {
@@ -66,7 +68,7 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
 
       <div className="pad" style={{ marginTop: 12 }}>
         <CarteDelai ch={ch} ctx={ctxCarte} titre={lotFiltre ? `Marché ${lotFiltre.code}` : lots.length > 1 ? 'Ensemble des marchés' : undefined}
-          numero={lotFiltre?.numeroMarche} osPropre={!!lotFiltre?.dateOS} onParams={onParams} />
+          numero={lotFiltre?.numeroMarche} osPropre={!!lotFiltre?.dateOS} onParams={onParams} lots={lots.map((l) => l.code)} />
 
         {lignes.length === 0 ? (
           <div className="card empty" style={{ marginTop: 14 }}>Aucun jalon.</div>
@@ -120,10 +122,11 @@ export function OngletJalons({ chantier: ch, onParams }: { chantier: Chantier; o
   );
 }
 
-function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
-  ch: Chantier; ctx: Contexte; titre?: string; numero?: string; osPropre: boolean; onParams: () => void;
+function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams, lots }: {
+  ch: Chantier; ctx: Contexte; titre?: string; numero?: string; osPropre: boolean; onParams: () => void; lots: string[];
 }) {
   const today = aujourdHui();
+  const [prolongations, setProlongations] = useState(false);
   const entete = titre && (
     <div style={{ marginBottom: 8 }}>
       <div style={{ fontWeight: 700 }}>{titre}</div>
@@ -150,6 +153,7 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
   return (
     <section className="card" aria-label="Délai d’exécution" style={{ padding: 14 }}>
       {entete}
+      {alerteFinExecution(ctx, ch.phase, today) && <div style={{ marginBottom: 10 }}><AlerteFin a={alerteFinExecution(ctx, ch.phase, today)} /></div>}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span className="ink2">Délai d’exécution{ctx.delai !== undefined ? <> · <span className="mono">{ctx.delai}</span> j</> : ' inconnu'}</span>
         <span className="mono" style={{ fontWeight: 600 }}>
@@ -178,6 +182,11 @@ function CarteDelai({ ch, ctx, titre, numero, osPropre, onParams }: {
         </button>
         <span className="ink2">{ctx.receptionReelle ? 'réception' : 'fin d’exécution'} <span className="mono" style={{ color: 'var(--ink)' }}>{fmtDate(ctx.reception)}</span></span>
       </div>
+      <button type="button" className="btn sec block tap" style={{ marginTop: 8, height: 48, fontSize: 16 }} onClick={() => setProlongations(true)}>
+        <CalendarPlus size={20} strokeWidth={2.2} aria-hidden />
+        {ch.prolongations?.length ? <>Prolongations : <span className="mono">+{ctx.prolongation ?? 0} j</span></> : 'Prolongation de délai'}
+      </button>
+      {prolongations && <Prolongations ch={ch} lots={lots} onClose={() => setProlongations(false)} />}
     </section>
   );
 }

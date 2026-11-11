@@ -1,6 +1,6 @@
 // Export texte « points non soldés » (checklist + réserves + jalons), à coller dans Claude
 // pour préparer le CR et la feuille de route de la réunion suivante.
-import { aujourdHui, contexte, datePoint, ecartJours, fmtDate, fmtHeure } from '../../domain/dates';
+import { aujourdHui, contexte, datePoint, ecartJours, fmtDate, fmtHeure, texteProlongations } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, RESPONSABLE, TYPE_CONTROLE, bloquantNonValide, refReserve } from '../../domain/statuts';
 import { pourcentage, statistiques } from '../../domain/checklist';
 import type { PointControle } from '../../domain/types';
@@ -27,6 +27,7 @@ export function pointsNonSoldes(d: DonneesChantier, ref = aujourdHui(), maintena
       ctx.reception && `réception ${ctx.receptionReelle ? '' : 'prévisionnelle '}: ${fmtDate(ctx.reception)}`,
     ].filter(Boolean).join(' · '));
   }
+  if (texteProlongations(ch)) L.push(`Prolongations de délai : ${texteProlongations(ch)}`);
 
   titre('MARCHÉS (1 lot = 1 marché)');
   for (const l of lots) {

@@ -19,6 +19,16 @@ export type PhaseChantier = 'preparation' | 'execution' | 'opr' | 'gpa' | 'clos'
 export type CategorieJalon = 'delai' | 'documentaire' | 'reception' | 'garantie' | 'paiement';
 export type RefJalon = 'OS_demarrage' | 'fin_preparation' | 'reception' | 'autre';
 
+/** Prolongation du délai d'exécution : pour tous les marchés (lotCode absent) ou un seul. */
+export interface Prolongation {
+  id: string;
+  acte: string; // « Avenant n° 1 », « OS n° 3 »
+  date?: string; // date de l'acte
+  jours: number;
+  motif: string;
+  lotCode?: string;
+}
+
 export interface Chantier {
   id?: number;
   nom: string;
@@ -36,6 +46,8 @@ export interface Chantier {
   dateDebutTravaux?: string;
   /** Fin d'exécution indiquée sur l'OS n° 1 = réception prévisionnelle ; vide = départ du délai + délai des jalons. */
   dateFinExecution?: string;
+  /** Prolongations du délai d'exécution (avenant, OS) : décalent la fin d'exécution. */
+  prolongations?: Prolongation[];
   compteurReserve: number; // pour numéroter R-01, R-02…
   creeLe: string;
   majLe: string;
