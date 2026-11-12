@@ -84,6 +84,14 @@ test('réunion : participant ajouté puis modifié, MOE nommé, compte rendu', a
   await enregistrerPanneau(page);
   await expect(page.getByRole('button', { name: 'Modifier M. Martin' })).toContainText('SID – USID de Corse (MOE)');
 
+  // Titulaire absent : pénalité d'absence appliquée depuis l'appel, puis rouverte pour modification
+  await page.getByRole('group', { name: 'Présence de Moretti GO' }).getByRole('button', { name: 'Absent' }).click();
+  await page.getByRole('button', { name: /Appliquer la pénalité d’absence/ }).click();
+  await page.locator('.sheet-foot button', { hasText: 'Appliquer' }).click();
+  await page.getByRole('button', { name: /Pénalité d’absence appliquée/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Pénalité' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fermer' }).click();
+
   // Compte rendu copié pour Claude : le participant ajouté (présent) y figure avec sa fonction
   await page.getByRole('button', { name: 'Compte rendu' }).click();
   await page.getByRole('button', { name: 'Copier pour Claude' }).click();
@@ -116,4 +124,23 @@ test('prompt d’extraction copié depuis l’écran Nouveau chantier', async ({
   const texte = await page.evaluate(() => navigator.clipboard.readText());
   expect(texte).toContain('Un lot = un marché');
   expect(texte).toContain('fin_preparation');
+});
+
+test('pénalité appliquée puis modifiée (quantité, statut)', async ({ page }) => {
+  await importerExemple(page);
+  await page.goto('#/chantier/1/penalites');
+  await page.getByRole('button', { name: 'Appliquer une pénalité' }).click();
+  await page.locator('.sheet [role=radio]', { hasText: /absence/i }).first().click(); // montant fixe (pas de % du marché)
+  await page.locator('.sheet-foot button', { hasText: 'Appliquer' }).click();
+  const carte = page.getByRole('button', { name: /^Modifier la pénalité/ });
+  await expect(carte).toHaveCount(1);
+  const avant = await carte.getAttribute('aria-label');
+
+  await carte.click();
+  await page.getByRole('button', { name: 'Augmenter' }).click();
+  await page.getByRole('button', { name: 'Notifiée' }).click();
+  await enregistrerPanneau(page);
+  await expect(carte).toHaveCount(1);
+  await expect(carte).not.toHaveAttribute('aria-label', avant!);
+  await expect(carte).toContainText('Notifiée');
 });

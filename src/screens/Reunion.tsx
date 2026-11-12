@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ClipboardCopy, Gavel, Pencil, Plus, Share2, Trash2, UserPlus, Users } from 'lucide-react';
 import { db, getReglage } from '../db/schema';
 import { useLive } from '../db/live';
-import type { Observation, Participant, Presence, Reunion as TReunion, TypeReunion } from '../domain/types';
+import type { Observation, Participant, PenaliteAppliquee, Presence, Reunion as TReunion, TypeReunion } from '../domain/types';
 import { CLE_ENTITE_MOE, PRESENCE, PROFIL_DEFAUT, RESPONSABLES, TYPE_REUNION, changementsDepuis, compteRendu, nouvelId, participantEntiteMoe, pointsASuivre, type Profil } from '../domain/reunion';
 import { ETAT_POINT, STATUT_RESERVE, refReserve, statutAffiche, bloquantNonValide } from '../domain/statuts';
 import { ajouterJours, aujourdHui, fmtCourt, fmtDate } from '../domain/dates';
@@ -97,8 +97,9 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
     ['', r.participants.filter((p) => !p.lotCode)],
     ...d.lots.map((l) => [l.code, r.participants.filter((p) => p.lotCode === l.code)] as [string, Participant[]]),
   ];
-  const absenceDejaAppliquee = (p: Participant) =>
-    d.appliquees.some((x) => x.lotCode === p.lotCode && x.date === r.date && /absen/i.test(x.motif));
+  const absenceAppliquee = (p: Participant) =>
+    d.appliquees.find((x) => x.lotCode === p.lotCode && x.date === r.date && /absen/i.test(x.motif));
+  const [penaliteModifiee, setPenaliteModifiee] = useState<PenaliteAppliquee | null>(null);
   const article = (lot?: string) => d.penalites.find((b) => /absen/i.test(b.motif) && (!b.lotCode || b.lotCode === lot));
 
   return (
@@ -148,8 +149,11 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
                     </div>
                   </div>
                   {p.presence === 'absent' && p.lotCode && p.role === 'Titulaire' && (
-                    absenceDejaAppliquee(p)
-                      ? <div className="c-r" style={{ fontWeight: 600, marginTop: 4 }}>Pénalité d’absence appliquée</div>
+                    absenceAppliquee(p)
+                      ? <button type="button" className="tap row c-r" style={{ fontWeight: 600, marginTop: 4, minHeight: 44, border: 0, background: 'transparent', padding: 0, gap: 6 }}
+                          onClick={() => setPenaliteModifiee(absenceAppliquee(p)!)}>
+                          Pénalité d’absence appliquée ({euros(absenceAppliquee(p)!.montant)})<Pencil size={16} strokeWidth={2.2} color="var(--accent)" aria-hidden />
+                        </button>
                       : <button type="button" className="btn danger tap" style={{ height: 48, fontSize: 16, marginTop: 6, width: '100%' }} onClick={() => setPenalite(p)}>
                           <Gavel size={20} aria-hidden />Appliquer la pénalité d’absence{art ? ` (${art.montantOuTaux.split(' par ')[0]})` : ''}
                         </button>
@@ -166,6 +170,10 @@ function Presences({ r, d, maj }: { r: TReunion; d: D; maj: Maj }) {
       {fiche && <FicheParticipant p={fiche.p} lots={d.lots.map((l) => l.code)} onClose={() => setFiche(null)}
         onEnregistrer={(x) => maj({ participants: fiche.p ? r.participants.map((y) => (y.cle === x.cle ? x : y)) : [...r.participants, x] })}
         onRetirer={fiche.p && (() => maj({ participants: r.participants.filter((y) => y.cle !== fiche.p!.cle) }))} />}
+      {penaliteModifiee && (
+        <SaisiePenalite chantierId={r.chantierId} penalite={penaliteModifiee} lots={d.lots} bareme={d.penalites} intervenants={d.intervenants}
+          onClose={() => setPenaliteModifiee(null)} />
+      )}
       {penalite && (
         <SaisiePenalite chantierId={r.chantierId} lots={d.lots} bareme={d.penalites} intervenants={d.intervenants}
           depuis={article(penalite.lotCode)} lotParDefaut={penalite.lotCode} datePre={r.date}

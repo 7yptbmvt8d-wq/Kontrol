@@ -156,7 +156,8 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
   en cours, échéance ≤ 15 j ; autres bloquants à part, repliés), `changementsDepuis` (début de la réunion
   précédente), `compteRendu` (texte pour Claude). Accès : onglet Intervenants › sélecteur Intervenants / Réunions
   (route `reunions`) ; écran `Reunion` (route `reunion/<id>`) en 3 étapes Appel / Déroulé / CR.
-  Absence d'un titulaire → pénalité d'absence pré-remplie (article du barème contenant « absen »).
+  Absence d'un titulaire → pénalité d'absence pré-remplie (article du barème contenant « absen ») ; une fois appliquée,
+  la mention « Pénalité d'absence appliquée (montant) » rouvre la pénalité pour modification (comme sa carte, onglet Pénalités).
   En tête de l'appel : l'utilisateur, **représentant du MOE** (`participantMoe`, présent par défaut) puis l'organisme
   **MOE** (`participantEntiteMoe`, non pointé par défaut : ignoré par « Autres présents » et absent du CR tant qu'il
   n'est pas pointé). Profil Réglages › Vous (`components/Profil.tsx`) : vous (nom, fonction, défaut « Représentant du MOE »),
@@ -217,7 +218,7 @@ ajoutés automatiquement au build et affichés dans Réglages › Version.
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run e2e` : tests de parcours Playwright (`e2e/*.e2e.ts`, iPhone simulé sous Chromium, app construite servie par
   `vite preview`, Google OAuth + Drive simulés par `e2e/googleSimule.ts`) — import, checklist, OS n° 1 / alerte OPR /
-  prolongation, réserve avec photo, réunion, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
+  prolongation, réserve avec photo, réunion (dont pénalité d'absence), pénalité modifiée, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
   `@playwright/test` épinglé sur la version du Chromium installé localement (1.63.0). À compléter à chaque nouveau parcours.
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
 - Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, Gavel, Plus } from 'lucide-react';
+import { ChevronDown, Gavel, Pencil, Plus } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { Chantier, Penalite, PenaliteAppliquee } from '../domain/types';
@@ -92,12 +92,15 @@ export function OngletPenalites({ chantier: ch }: { chantier: Chantier }) {
           {liste.map((p) => {
             const s = STATUT_PENALITE[p.statut];
             return (
-              <button key={p.id} type="button" className="card tap" style={{ textAlign: 'left', padding: 12, width: '100%' }} onClick={() => setSaisie({ p })}>
+              <button key={p.id} type="button" className="card tap" style={{ textAlign: 'left', padding: 12, width: '100%' }} onClick={() => setSaisie({ p })}
+                aria-label={`Modifier la pénalité : ${p.motif}, ${euros(p.montant)}`}>
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="mono ink2">{fmtDate(p.date)} · {p.lotCode}</span>
                   <Pastille ton={s.ton}>{s.libelle}</Pastille>
                 </div>
-                <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.3, marginTop: 4 }}>{p.motif}</div>
+                <div style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.3, marginTop: 4 }}>
+                  {p.motif}<Pencil size={16} strokeWidth={2.2} color="var(--accent)" aria-hidden style={{ marginLeft: 6, verticalAlign: '-2px' }} />
+                </div>
                 <div className="ink2 ellipsis" style={{ marginTop: 2 }}>{p.entreprise || '—'}</div>
                 <div className="row" style={{ justifyContent: 'space-between', marginTop: 6 }}>
                   <span className="ink2">{p.montantUnitaire !== undefined ? `${pluriel(p.quantite, p.unite)} × ${euros(p.montantUnitaire)}` : pluriel(p.quantite, p.unite)}</span>
