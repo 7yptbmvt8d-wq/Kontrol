@@ -18,6 +18,7 @@ import { getReglage } from './db/schema';
 import { appliquerTheme, type Theme } from './theme';
 import { demarrerSW } from './pwa/sw';
 import { toast } from './components/ui';
+import { Secours } from './components/Secours';
 
 // iOS n'applique :active (retour visuel au toucher) que si un écouteur touchstart existe.
 document.addEventListener('touchstart', () => {}, { passive: true });
@@ -35,8 +36,17 @@ getReglage<Theme>('theme', 'sombre').then(appliquerTheme).catch(() => {});
 // Hors ligne : mise en cache de l'app par le service worker
 demarrerSW(() => toast('App prête pour une utilisation hors ligne'));
 
+// Erreurs hors affichage (actions asynchrones) : signalées au lieu d'échouer en silence
+window.addEventListener('unhandledrejection', (e) => {
+  const err = e.reason as Error | undefined;
+  if (err?.name === 'AbortError') return; // partage ou envoi annulé par l'utilisateur
+  toast(`Erreur : ${err?.message ?? String(e.reason)}`);
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Secours>
+      <App />
+    </Secours>
   </StrictMode>,
 );

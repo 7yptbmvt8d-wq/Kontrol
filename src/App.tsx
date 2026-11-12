@@ -11,6 +11,7 @@ import { DetailReserve } from './screens/DetailReserve';
 import { Exports } from './screens/Exports';
 import { Reunion } from './screens/Reunion';
 import { Toaster } from './components/ui';
+import { Secours } from './components/Secours';
 import { BandeauMiseAJour, TirerPourActualiser } from './components/Actualisation';
 
 let demarre = false;
@@ -40,7 +41,7 @@ export function App() {
   return (
     <>
       <div className="statusbar" aria-hidden />
-      {ecran}
+      <Secours route={[a, b, c, d].join('/')}>{ecran}</Secours>
       <Toaster />
       <TirerPourActualiser />
       <BandeauMiseAJour />

@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # Tests de parcours sur iPhone simulé : une version qui casse un parcours n'est pas mise en ligne
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

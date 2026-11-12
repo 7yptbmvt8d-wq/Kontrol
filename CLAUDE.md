@@ -105,6 +105,8 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
   Toute évolution du schéma = nouvelle `version(n)` avec migration, jamais de modification de `version(1)`.
 - `src/domain/` — types, dates, statuts, import (logique pure, sans React).
 - `src/components/` — composants UI communs (`ui.tsx` : Header, Pastille, Sheet, Segment, toast).
+  `Secours.tsx` : écran de secours en cas d'erreur d'affichage (Recharger, Retour à l'accueil, Copier le détail ;
+  remis à zéro au changement d'écran) ; erreurs asynchrones non gérées → toast (main.tsx).
 - `src/screens/` — écrans. `src/router.ts` — routeur hash minimal.
 - `tests/` — tests Vitest de la logique métier (dates, import, migration, checklist, réserves, exports, sauvegarde, pénalités, réunion).
 - `src/services/photos.ts` — compression (1600 px, JPEG 0,7) + vignette 240 px ; `src/components/Photos.tsx` — bandeau, visionneuse.
@@ -136,7 +138,6 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
   `Photos /` (nommées par réserve / point, `drive/nommage.ts` testé ; seules les nouvelles sont envoyées ; renommées si
   besoin ; mises à la corbeille Drive si supprimées de l'app). Fichiers repérés par `appProperties` (pas par le nom).
   Un dossier de chantier supprimé de l'app reste sur le Drive. Échec des dossiers ≠ échec de la sauvegarde (`config.documents`).
-  À venir : `Comptes rendus /` (CR .docx de réunion depuis le modèle de l'utilisateur).
   Identifiant client OAuth saisi une fois dans Réglages (ou `VITE_GOOGLE_CLIENT_ID`) ; collage tolérant (`drive/identifiant.ts`).
   Projet Google Cloud « Kontrol » (kontrol-514109), en production, portée `drive.file` seule : **ne pas supprimer
   `public/confidentialite.html`** (règles de confidentialité déclarées dans l'écran de consentement Google ; exclue du
@@ -214,6 +215,10 @@ ajoutés automatiquement au build et affichés dans Réglages › Version.
 
 ## Commandes
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
+- `npm run e2e` : tests de parcours Playwright (`e2e/*.e2e.ts`, iPhone simulé sous Chromium, app construite servie par
+  `vite preview`, Google OAuth + Drive simulés par `e2e/googleSimule.ts`) — import, checklist, OS n° 1 / alerte OPR /
+  prolongation, réserve avec photo, réunion, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
+  `@playwright/test` épinglé sur la version du Chromium installé localement (1.63.0). À compléter à chaque nouveau parcours.
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
 - Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.
 - Déploiement : `.github/workflows/deploy.yml` → GitHub Pages **uniquement depuis `main`** (= version en ligne).
