@@ -89,13 +89,6 @@ export function SectionDrive({ onRestaurer }: { onRestaurer: (fichier: Blob, nom
           <button type="button" className="btn sec block tap" onClick={ouvrirListe} disabled={chargement !== null}>
             {chargement === 'liste' ? <span className="spinner" aria-hidden /> : <CloudDownload size={20} strokeWidth={2.2} aria-hidden />}Restaurer depuis Google Drive
           </button>
-          <button type="button" className="btn sec block tap" onClick={() => void copier(client)}>
-            <ClipboardCopy size={20} strokeWidth={2.2} aria-hidden />Copier l’identifiant (autre appareil)
-          </button>
-          <div className="ink2">
-            Sur l’iPad : installez Kontrol, collez cet identifiant dans Réglages › Google Drive, connectez le même compte Google,
-            puis « Restaurer depuis Google Drive ». C’est une copie : les saisies faites sur l’iPad ne reviennent pas sur l’iPhone.
-          </div>
           <button type="button" className="btn sec block tap" onClick={() => {
             if (confirm('Déconnecter Google Drive ? Les sauvegardes déjà déposées restent sur votre Drive.')) deconnecter();
           }}><LogOut size={20} strokeWidth={2.2} aria-hidden />Déconnecter</button>
