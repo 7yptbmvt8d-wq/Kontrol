@@ -56,6 +56,7 @@
   --btn-h: 56px;        /* bouton principal */
   --fab: 64px;
   --gutter: 16px;
+  --largeur-max: 760px; /* iPad / grand écran : largeur de la colonne de contenu */
   --gap-xs: 6px;
   --gap-sm: 8px;
   --gap-md: 12px;

@@ -8,7 +8,10 @@ checklist de contrôle issue du CCTP/CCAP et suivi des réserves. Interface en f
   **sauf** la sauvegarde Google Drive (OAuth, scope `drive.file` uniquement).
 - Hors ligne (service worker, vite-plugin-pwa). Polices embarquées (@fontsource), jamais Google Fonts.
 - Hébergement du code : GitHub Pages uniquement (`base: '/Kontrol/'`, routage par hash `#/…`).
-- Utilisation à une main, en extérieur. Format de référence iPhone 390 × 844.
+- Utilisation à une main, en extérieur. Format de référence iPhone 390 × 844. **iPad** (consultation, réunion) : colonne
+  centrée de `--largeur-max` (760 px) au-delà de 700 px de large (écrans, barre du bas, panneaux, toasts, bouton +) ;
+  rotation libre. Données propres à chaque appareil : copie vers l'iPad par « Restaurer depuis Google Drive »
+  (pas de synchronisation) ; « Copier l'identifiant (autre appareil) » dans Réglages › Google Drive.
 
 ## Stack
 React 19 + Vite 8 + TypeScript, Dexie 4 (+ dexie-react-hooks), lucide-react (icônes),
@@ -202,7 +205,7 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
 V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2 : mode réunion.
 V1.3 : dossiers chantiers sur Google Drive (rapport PDF, Excel, photos).
 V1.4 : période de préparation (comprise ou non dans le délai), échéances en texte rattachées aux dates du chantier.
-V1.5 : OS n° 1 à trois dates. V1.6 : prolongations de délai, alerte « OPR à programmer » à J-60.
+V1.5 : OS n° 1 à trois dates. V1.6 : prolongations de délai, alerte « OPR à programmer » à J-60. V1.7 : iPad.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)
@@ -218,7 +221,7 @@ ajoutés automatiquement au build et affichés dans Réglages › Version.
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run e2e` : tests de parcours Playwright (`e2e/*.e2e.ts`, iPhone simulé sous Chromium, app construite servie par
   `vite preview`, Google OAuth + Drive simulés par `e2e/googleSimule.ts`) — import, checklist, OS n° 1 / alerte OPR /
-  prolongation, réserve avec photo, réunion (dont pénalité d'absence), pénalité modifiée, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
+  prolongation, réserve avec photo, réunion (dont pénalité d'absence), pénalité modifiée, Drive, écran de secours, prompt, iPad paysage. Exécutés en CI avant chaque mise en ligne.
   `@playwright/test` épinglé sur la version du Chromium installé localement (1.63.0). À compléter à chaque nouveau parcours.
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
 - Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.
