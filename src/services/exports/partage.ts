@@ -10,11 +10,12 @@ export const TYPES = {
   txt: 'text/plain;charset=utf-8',
 } as const;
 
-export async function partager(fichiers: FichierPret[], titre?: string): Promise<'partage' | 'telecharge' | 'annule'> {
+/** `texte` : message joint (corps du mail quand on choisit Mail) ; `titre` : objet proposé. */
+export async function partager(fichiers: FichierPret[], titre?: string, texte?: string): Promise<'partage' | 'telecharge' | 'annule'> {
   const files = fichiers.map((f) => new File([f.blob], f.nom, { type: f.blob.type }));
   if (navigator.canShare?.({ files })) {
     try {
-      await navigator.share({ files, title: titre });
+      await navigator.share({ files, title: titre, ...(texte ? { text: texte } : {}) });
       return 'partage';
     } catch (e) {
       if ((e as Error).name === 'AbortError') return 'annule';

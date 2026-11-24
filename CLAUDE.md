@@ -116,7 +116,8 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
   **Fiche PDF pour l'entreprise** (`pdfFicheReserve` : marché et n°, entreprise, constat, localisation, gravité, « à lever
   avant le », photos, émetteur = profil MOE) : bouton « Envoyer la fiche à l'entreprise » sur la réserve, et proposée
   juste après la création (onglet Réserves, point de contrôle ; pas en réunion) — `components/EnvoiReserve.tsx`,
-  feuille de partage iOS (Mail…).
+  feuille de partage iOS (Mail…) avec **mail pré-rédigé** modifiable (`domain/messageReserve.ts`, testé : objet, corps signé
+  du profil ; transmis en `text`/`title` à `partager`) et adresse de l'entreprise (fiche intervenant) à copier.
   **Logo des documents** (Réglages › Logo des documents, ex. SID SE) : choisi par l'utilisateur sur le téléphone
   (jamais dans le dépôt public), PNG ≤ 800 × 400 px en data URL dans `reglages` (clé `logoDocuments`, inclus dans les
   sauvegardes) ; chargé par `chargerChantier` (`d.logo`) et dessiné en tête de la 1ʳᵉ page de tous les PDF (`DocPdf`).

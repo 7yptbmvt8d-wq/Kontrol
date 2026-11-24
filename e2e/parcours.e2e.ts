@@ -68,6 +68,8 @@ test('réserve avec photo prise dans la photothèque, fiche PDF avec logo pour l
   // Proposition d'envoi de la fiche PDF à l'entreprise (téléchargée ici, feuille de partage sur iPhone)
   const proposition = page.getByRole('dialog', { name: /Réserve R-01 enregistrée/ });
   await expect(proposition).toBeVisible();
+  await expect(proposition.getByLabel('Message (modifiable)')).toHaveValue(/Veuillez trouver ci-joint la fiche de la réserve R-01/);
+  await expect(proposition).toContainText('Objet : Réhabilitation bâtiment 12 – Camp Nord – Réserve R-01');
   const telechargement = page.waitForEvent('download');
   await proposition.getByRole('button', { name: 'Envoyer à l’entreprise' }).click();
   const pdf = await telechargement;
