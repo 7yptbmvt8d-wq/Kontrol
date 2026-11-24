@@ -5,7 +5,7 @@ import type { Reserve } from '../../domain/types';
 import { aujourdHui, contexte, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure, texteProlongations } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, PHASE_CONTROLE, bloquantNonValide, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
 import { estValide, grouper, statistiques } from '../../domain/checklist';
-import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier, type LogoDocuments } from './donnees';
+import { derniereAction, lignesJalons, operationPdf, origineTexte, statutTexte, type DonneesChantier, type LogoDocuments } from './donnees';
 import { STATUT_PENALITE, euros, pluriel } from '../../domain/penalites';
 import { TYPES, type FichierPret } from './partage';
 
@@ -170,7 +170,7 @@ async function sectionReserves(doc: DocPdf, d: DonneesChantier, reserves: Reserv
   doc.espace(1);
   const lots = [...new Set(reserves.map((r) => r.lotCode))];
   const marches = d.lots.filter((l) => lots.includes(l.code)).map((l) => `${l.code} : marché ${l.numeroMarche || 'n° non renseigné'}`);
-  if (d.ch.operation) doc.texte(`Opération : ${d.ch.operation}`, { taille: 9.5, couleur: GRIS });
+  if (d.ch.operation) doc.texte(`Opération : ${operationPdf(d.ch)}`, { taille: 9.5, couleur: GRIS });
   if (marches.length) doc.texte(marches.join('   ·   '), { taille: 9.5, couleur: GRIS });
   const n = (f: (r: Reserve) => boolean) => reserves.filter(f).length;
   doc.texte(
@@ -281,7 +281,7 @@ function sectionSynthese(doc: DocPdf, d: DonneesChantier) {
   const ref = aujourdHui();
   doc.texte('Rapport de chantier', { taille: 18, gras: true, couleur: ACCENT });
   doc.texte(d.ch.nom, { taille: 13, gras: true });
-  const infos = [d.ch.operation && `Opération : ${d.ch.operation}`, d.ch.site && `Site : ${d.ch.site}`, `Phase : ${PHASE_CHANTIER[d.ch.phase]}`,
+  const infos = [d.ch.operation && `Opération : ${operationPdf(d.ch)}`, d.ch.site && `Site : ${d.ch.site}`, `Phase : ${PHASE_CHANTIER[d.ch.phase]}`,
     d.ch.dateOS && `OS de démarrage : ${fmtDate(d.ch.dateOS)}`].filter(Boolean).join('   ·   ');
   const ctx = contexte(d.ch, d.lots, d.jalons);
   const delais = [
@@ -399,7 +399,7 @@ export async function pdfFicheReserve(d: DonneesChantier, r: Reserve, nom: strin
 
   // Tableau « libellé : valeur »
   const lignes: [string, string][] = [
-    ['Opération', [d.ch.nom, d.ch.operation].filter(Boolean).join(' — ')],
+    ['Opération', operationPdf(d.ch)],
     ['Site', d.ch.site],
     ['Marché', lot ? `${lot.code}${lot.intitule ? ` – ${lot.intitule}` : ''}${lot.numeroMarche ? ` · marché n° ${lot.numeroMarche}` : ''}` : r.lotCode],
     ['Entreprise', r.entreprise || '—'],

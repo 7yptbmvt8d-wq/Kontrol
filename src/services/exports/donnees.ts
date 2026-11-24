@@ -81,3 +81,20 @@ export const horodatage = () => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
 };
+
+/** Numéros internes inutiles dans les documents envoyés (DAF, ESID, COSI) retirés d'un libellé d'opération. */
+export function sansNumerosInternes(s: string): string {
+  const cle = '(?<![A-Za-z])(?:DAF|ESID|COSI)(?![A-Za-z])';
+  // 1. Groupe entre parenthèses : « (DAF_2023_… / ESID … / COSI …) »
+  const t = s.replace(new RegExp(`\\s*\\([^()]*${cle}[^()]*\\)`, 'gi'), '').replace(/\s{2,}/g, ' ').trim();
+  if (!new RegExp(cle, 'i').test(t)) return t;
+  // 2. Numéros restants hors parenthèses : morceaux « … - COSI 440 502 », « / ESID … » retirés
+  return t.split(/\s+[/;]\s+|\s+-\s+/).filter((m) => !new RegExp(cle, 'i').test(m)).join(' - ').replace(/\s{2,}/g, ' ').trim();
+}
+
+/** Opération pour les PDF : libellé sans numéros internes ; le nom du chantier s'il n'y est pas déjà. */
+export function operationPdf(ch: Chantier): string {
+  const op = sansNumerosInternes(ch.operation ?? '');
+  if (!op) return ch.nom;
+  return op.toLowerCase().includes(ch.nom.toLowerCase()) ? op : `${ch.nom} — ${op}`;
+}

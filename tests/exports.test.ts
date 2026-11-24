@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import * as XLSX from 'xlsx';
 import { db } from '../src/db/schema';
 import { importerChantier, validerImport } from '../src/domain/import';
-import { chargerChantier, nomFichier } from '../src/services/exports/donnees';
+import { chargerChantier, nomFichier, operationPdf, sansNumerosInternes } from '../src/services/exports/donnees';
 import { pointsNonSoldes } from '../src/services/exports/texte';
 import { xlsxJalons, xlsxPenalites, xlsxReserves, xlsxSuivi } from '../src/services/exports/xlsx';
 import { creerReserve, lever } from '../src/services/reserves';
@@ -87,6 +87,17 @@ describe('exports', () => {
 
   it('refuse un fichier qui n’est pas une sauvegarde', async () => {
     await expect(lireSauvegarde(new Blob(['pas un zip']))).rejects.toThrow('archive ZIP');
+  });
+
+  it('PDF : numéros internes (DAF, ESID, COSI) retirés du libellé d’opération', () => {
+    const op = 'VENTISERI (2B) - SEO - DEA - Création d\'un atelier NTI 1+ (DAF_2023_001093 / ESID 23 119 à 121 / COSI 440 502)';
+    expect(sansNumerosInternes(op)).toBe('VENTISERI (2B) - SEO - DEA - Création d\'un atelier NTI 1+');
+    expect(sansNumerosInternes('Rénovation de l’aire de lavage - COSI 440 502 - ESID 24 001')).toBe('Rénovation de l’aire de lavage');
+    expect(sansNumerosInternes('DAF 2024-0012')).toBe('');
+    expect(sansNumerosInternes('Réfection des toitures (DEA)')).toBe('Réfection des toitures (DEA)');
+    const ch = { nom: 'Création d\'un atelier NTI 1+', operation: op } as Parameters<typeof operationPdf>[0];
+    expect(operationPdf(ch)).toBe('VENTISERI (2B) - SEO - DEA - Création d\'un atelier NTI 1+');
+    expect(operationPdf({ ...ch, operation: 'COSI 1' })).toBe('Création d\'un atelier NTI 1+');
   });
 
   it('noms de fichiers et texte PDF', () => {
