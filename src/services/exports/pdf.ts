@@ -372,3 +372,77 @@ export async function pdfRapport(d: DonneesChantier, nom: string): Promise<Fichi
   }
   return { nom, blob: doc.terminer() };
 }
+
+// ---------- Fiche de réserve (envoi à l'entreprise) ----------
+
+/** Émetteur de la fiche : le représentant du MOE et son organisme (profil, Réglages › Vous). */
+export interface Emetteur { nom: string; fonction: string; organisme: string }
+
+/** Fiche d'une réserve pour l'entreprise : marché, constat, échéance de levée, photos, émetteur. */
+export async function pdfFicheReserve(d: DonneesChantier, r: Reserve, nom: string, emetteur?: Emetteur): Promise<FichierPret> {
+  const ref = aujourdHui();
+  const doc = new DocPdf(enTeteChantier(d), edition());
+  const pdf = doc.doc;
+  const lot = d.lots.find((l) => l.code === r.lotCode);
+
+  doc.texte(`Fiche de réserve ${refReserve(r.numero)}`, { taille: 18, gras: true, couleur: ACCENT });
+  doc.texte(`${statutTexte(r, ref)} · gravité ${GRAVITE[r.gravite].toLowerCase()}`, { taille: 10.5, gras: true, couleur: r.gravite === 'bloquante' ? TON.r : GRIS });
+  doc.espace(3);
+
+  // Tableau « libellé : valeur »
+  const lignes: [string, string][] = [
+    ['Opération', [d.ch.nom, d.ch.operation].filter(Boolean).join(' — ')],
+    ['Site', d.ch.site],
+    ['Marché', lot ? `${lot.code}${lot.intitule ? ` – ${lot.intitule}` : ''}${lot.numeroMarche ? ` · marché n° ${lot.numeroMarche}` : ''}` : r.lotCode],
+    ['Entreprise', r.entreprise || '—'],
+    ['Constatée le', `${fmtDate(r.creeLe.slice(0, 10))} · ${origineTexte(r)}`],
+    ['Localisation', r.localisation || '—'],
+    ['Gravité', GRAVITE[r.gravite]],
+    ['À lever avant le', r.echeance ? fmtDate(r.echeance) : 'non fixée'],
+  ].filter(([, v]) => v) as [string, string][];
+  doc.trait();
+  for (const [libelle, valeur] of lignes) {
+    doc.place(8);
+    const y0 = doc.y;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(...GRIS);
+    pdf.text(pdfTexte(libelle), MARGE, y0 + 4);
+    doc.texte(valeur, { x: MARGE + 38, largeur: LARGEUR - 38, taille: 10.5, gras: libelle === 'À lever avant le' || libelle === 'Entreprise' });
+    doc.espace(1);
+  }
+  doc.trait();
+  doc.espace(1);
+  doc.texte('Description', { taille: 9.5, couleur: GRIS });
+  doc.texte(r.description, { taille: 12, gras: true });
+  doc.espace(3);
+
+  // Photos du constat : 2 par ligne, grandes
+  const images = (await Promise.all(r.photoIds.slice(0, 6).map(async (id, i) => ({ i, img: await imagePdf(id) })))).filter((x) => x.img);
+  if (images.length) {
+    doc.texte(`Photo${images.length > 1 ? 's' : ''} du constat`, { taille: 9.5, couleur: GRIS });
+    const l = (LARGEUR - 6) / 2;
+    const hMax = l * 0.75;
+    for (let k = 0; k < images.length; k += 2) {
+      doc.place(hMax + 8);
+      doc.espace(1);
+      const yy = doc.y;
+      images.slice(k, k + 2).forEach((x, j) => {
+        const img = x.img!;
+        const kx = Math.min(l / img.w, hMax / img.h);
+        pdf.addImage(img.data, 'JPEG', MARGE + j * (l + 6), yy, img.w * kx, img.h * kx, undefined, 'FAST');
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...GRIS);
+        pdf.text(`Photo ${x.i + 1}`, MARGE + j * (l + 6), yy + img.h * kx + 3.5);
+      });
+      doc.y = yy + hMax + 6;
+    }
+  }
+
+  doc.espace(4);
+  doc.texte(`Merci de lever cette réserve${r.echeance ? ` avant le ${fmtDate(r.echeance)}` : ''} et d’en informer la maîtrise d’œuvre, photos à l’appui.`, { taille: 10.5 });
+  if (emetteur && (emetteur.nom || emetteur.organisme)) {
+    doc.espace(4);
+    doc.texte('Pour la maîtrise d’œuvre', { taille: 9.5, couleur: GRIS });
+    doc.texte([emetteur.nom, emetteur.fonction].filter(Boolean).join(', '), { taille: 10.5, gras: true });
+    if (emetteur.organisme) doc.texte(emetteur.organisme, { taille: 10 });
+  }
+  return { nom, blob: doc.terminer() };
+}

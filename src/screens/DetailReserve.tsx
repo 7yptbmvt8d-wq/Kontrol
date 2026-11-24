@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Check, ChevronLeft, ImageIcon, Pencil, RotateCcw } from 'lucide-react';
+import { Camera, Check, ChevronLeft, ImageIcon, Pencil, RotateCcw, Send } from 'lucide-react';
 import { db } from '../db/schema';
 import { useLive } from '../db/live';
 import type { EvenementReserve, Reserve } from '../domain/types';
@@ -11,6 +11,7 @@ import { enregistrerPhotos } from '../services/photos';
 import { lever, refuserLevee, relancer, rouvrir, signalerLevee } from '../services/reserves';
 import { aller, retour } from '../router';
 import { SaisieReserve } from './SaisieReserve';
+import { EnvoiReserve } from '../components/EnvoiReserve';
 
 const COULEUR_EVT: Record<EvenementReserve['type'], string> = {
   creation: 'var(--b)', relance: 'var(--o)', levee_a_verifier: 'var(--o)', levee: 'var(--g)', refus: 'var(--r)',
@@ -23,6 +24,7 @@ export function DetailReserve({ chantierId, rid }: { chantierId: number; rid: nu
   const r = useLive(`reserve:${rid}`, () => db.reserves.get(rid).then((x) => (x && x.chantierId === chantierId ? x : null)), [rid]);
   const [action, setAction] = useState<Action>(null);
   const [edition, setEdition] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
   const [vue, setVue] = useState<{ ids: number[]; titre: string } | null>(null);
   const retourListe = () => retour('chantier', chantierId, 'reserves');
 
@@ -72,6 +74,12 @@ export function DetailReserve({ chantierId, rid }: { chantierId: number; rid: nu
             : ORIGINE[r.origine]}</dd></div>
       </dl>
 
+      <div className="pad" style={{ marginTop: 12 }}>
+        <button type="button" className="btn sec-acc block tap" onClick={() => setEnvoi(true)}>
+          <Send size={22} strokeWidth={2.2} aria-hidden />Envoyer la fiche à l’entreprise
+        </button>
+      </div>
+
       {r.statut !== 'leve' && r.statut !== 'levee_a_verifier' && (
         <div className="pad row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
           <button type="button" className="btn sec tap" style={{ flex: '1 1 0' }} onClick={() => setAction('relance')}>Relancer</button>
@@ -118,6 +126,7 @@ export function DetailReserve({ chantierId, rid }: { chantierId: number; rid: nu
       {(action === 'relance' || action === 'refus') && <SheetRelance r={r} refus={action === 'refus'} onClose={() => setAction(null)} />}
       {action === 'levee' && <SheetLevee r={r} onClose={() => setAction(null)} />}
       {edition && <SaisieReserve chantierId={chantierId} reserve={r} onClose={() => setEdition(false)} />}
+      {envoi && <EnvoiReserve chantierId={chantierId} rid={r.id!} onClose={() => setEnvoi(false)} />}
       {vue && vue.ids.length > 0 && <Visionneuse ids={vue.ids} titre={vue.titre} onClose={() => setVue(null)} />}
     </main>
   );

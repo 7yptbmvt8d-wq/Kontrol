@@ -41,7 +41,7 @@ test('OS n° 1, alerte « OPR à programmer » et prolongation de délai', async
   await expect(page.locator('.tl li', { hasText: /Fin du délai d.exécution/ })).toContainText('de prolongation');
 });
 
-test('réserve avec photo prise dans la photothèque', async ({ page, browser }) => {
+test('réserve avec photo prise dans la photothèque, fiche PDF pour l’entreprise', async ({ page, browser }) => {
   await importerExemple(page);
   // Photo de test : capture d'un bloc de couleur
   const atelier = await browser.newPage({ viewport: { width: 800, height: 600 } });
@@ -55,7 +55,20 @@ test('réserve avec photo prise dans la photothèque', async ({ page, browser })
   await expect(page.locator('.saisie-photo')).toHaveCount(1);
   await page.fill('#sr-desc', 'Fissure enduit façade nord');
   await enregistrerPanneau(page);
+
+  // Proposition d'envoi de la fiche PDF à l'entreprise (téléchargée ici, feuille de partage sur iPhone)
+  const proposition = page.getByRole('dialog', { name: /Réserve R-01 enregistrée/ });
+  await expect(proposition).toBeVisible();
+  const telechargement = page.waitForEvent('download');
+  await proposition.getByRole('button', { name: 'Envoyer à l’entreprise' }).click();
+  const pdf = await telechargement;
+  expect(pdf.suggestedFilename()).toMatch(/^Reserve-R-01-.+\.pdf$/);
+  const { size } = await import('node:fs').then((fs) => pdf.path().then((p) => fs.statSync(p)));
+  expect(size).toBeGreaterThan(10_000); // avec la photo
+
   await expect(page.locator('a.res', { hasText: 'Fissure enduit façade nord' })).toBeVisible();
+  await page.locator('a.res', { hasText: 'Fissure enduit façade nord' }).click();
+  await expect(page.getByRole('button', { name: 'Envoyer la fiche à l’entreprise' })).toBeVisible();
   await page.goto('#/');
   await expect(page.getByRole('button', { name: '1 réserve ouverte' })).toBeVisible();
 });

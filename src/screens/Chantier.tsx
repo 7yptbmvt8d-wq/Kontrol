@@ -11,6 +11,7 @@ import { OngletReunions } from './OngletReunions';
 import { OngletChecklist } from './OngletChecklist';
 import { OngletReserves } from './OngletReserves';
 import { SaisieReserve } from './SaisieReserve';
+import { EnvoiReserve } from '../components/EnvoiReserve';
 import { OngletIntervenants } from './OngletIntervenants';
 import { ParametresChantier } from './ParametresChantier';
 
@@ -32,6 +33,7 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
   const nbPenalites = useLive(`nbPenalites:${id}`, () => db.penalitesAppliquees.where('chantierId').equals(id).count(), [id]);
   const [params, setParams] = useState(false);
   const [saisie, setSaisie] = useState(false);
+  const [envoi, setEnvoi] = useState<number | null>(null); // fiche de la réserve créée, à envoyer
 
   const fermerParams = () => setParams(false);
   const retourAccueil = () => retour('');
@@ -108,7 +110,8 @@ export function Chantier({ id, onglet }: { id: number; onglet: Onglet }) {
           </button>
         </>
       )}
-      {saisie && <SaisieReserve chantierId={id} onClose={() => setSaisie(false)} />}
+      {saisie && <SaisieReserve chantierId={id} onClose={() => setSaisie(false)} onCree={(r) => setEnvoi(r.id!)} />}
+      {envoi !== null && <EnvoiReserve chantierId={id} rid={envoi} nouvelle onClose={() => setEnvoi(null)} />}
       {params && <ParametresChantier chantier={ch} onClose={fermerParams} />}
     </main>
   );

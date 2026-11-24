@@ -12,6 +12,7 @@ import { enregistrerPhotos } from '../services/photos';
 import { aller, remplacer, retour } from '../router';
 import { EditionPoint } from './EditionPoint';
 import { SaisieReserve } from './SaisieReserve';
+import { EnvoiReserve } from '../components/EnvoiReserve';
 
 const ORDRE_ETATS: { v: EtatPoint; large?: boolean }[] = [
   { v: 'conforme', large: true }, { v: 'non_conforme', large: true },
@@ -35,6 +36,7 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
   }, [chantierId, uid]);
   const [edition, setEdition] = useState(false);
   const [saisie, setSaisie] = useState(false);
+  const [envoi, setEnvoi] = useState<number | null>(null);
   const [photosEnCours, setPhotosEnCours] = useState(false);
   const retourChecklist = () => retour('chantier', chantierId, 'checklist');
 
@@ -199,9 +201,10 @@ export function DetailPoint({ chantierId, uid }: { chantierId: number; uid: numb
       </div>
 
       {saisie && (
-        <SaisieReserve chantierId={chantierId} onClose={() => setSaisie(false)}
+        <SaisieReserve chantierId={chantierId} onClose={() => setSaisie(false)} onCree={(x) => setEnvoi(x.id!)}
           pre={{ lotCode: p.lot, origine: 'controle', pointId: p.id, description: `${p.intitule}${p.commentaire ? ` : ${p.commentaire}` : ''}` }} />
       )}
+      {envoi !== null && <EnvoiReserve chantierId={chantierId} rid={envoi} nouvelle onClose={() => setEnvoi(null)} />}
       {edition && <EditionPoint chantierId={chantierId} point={p} lots={lots.map((l) => l.code)} onClose={() => setEdition(false)} />}
     </main>
   );

@@ -113,6 +113,10 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
 - Réserves : `src/domain/reserves.ts` (compteurs, filtres, tri), `src/services/reserves.ts` (création numérotée R-01…,
   relance, levée signalée, levée avec photo obligatoire, refus, réouverture — historique tenu à chaque action),
   `OngletReserves`, `SaisieReserve` (panneau du bas, création et modification), `DetailReserve`.
+  **Fiche PDF pour l'entreprise** (`pdfFicheReserve` : marché et n°, entreprise, constat, localisation, gravité, « à lever
+  avant le », photos, émetteur = profil MOE) : bouton « Envoyer la fiche à l'entreprise » sur la réserve, et proposée
+  juste après la création (onglet Réserves, point de contrôle ; pas en réunion) — `components/EnvoiReserve.tsx`,
+  feuille de partage iOS (Mail…).
   « En retard » = échéance dépassée et statut ouvert ou relancé (une levée à vérifier attend le MOE, pas l'entreprise).
   Bouton « + » flottant sur les onglets Checklist, Réserves et Jalons. Dictée : `components/Dictee.tsx`
   (Web Speech API si disponible, sinon micro du clavier iOS).
@@ -203,6 +207,7 @@ V1.1 : registre des pénalités appliquées, photos depuis la photothèque. V1.2
 V1.3 : dossiers chantiers sur Google Drive (rapport PDF, Excel, photos).
 V1.4 : période de préparation (comprise ou non dans le délai), échéances en texte rattachées aux dates du chantier.
 V1.5 : OS n° 1 à trois dates. V1.6 : prolongations de délai, alerte « OPR à programmer » à J-60.
+V1.8 : fiche PDF de réserve à envoyer à l'entreprise.
 À la fin de chaque étape : marche à suivre pour tester sur iPhone.
 
 ### Hors périmètre V1 (ne pas développer)
@@ -218,7 +223,7 @@ ajoutés automatiquement au build et affichés dans Réglages › Version.
 - `npm run dev` (accessible sur le réseau local) · `npm run build` · `npm run typecheck` · `npm test`
 - `npm run e2e` : tests de parcours Playwright (`e2e/*.e2e.ts`, iPhone simulé sous Chromium, app construite servie par
   `vite preview`, Google OAuth + Drive simulés par `e2e/googleSimule.ts`) — import, checklist, OS n° 1 / alerte OPR /
-  prolongation, réserve avec photo, réunion (dont pénalité d'absence), pénalité modifiée, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
+  prolongation, réserve avec photo et fiche PDF, réunion (dont pénalité d'absence), pénalité modifiée, Drive, écran de secours, prompt. Exécutés en CI avant chaque mise en ligne.
   `@playwright/test` épinglé sur la version du Chromium installé localement (1.63.0). À compléter à chaque nouveau parcours.
 - `npm run icons` (nécessite Playwright) — régénère `public/icons/*.png` depuis `public/icons/icon.svg`.
 - Vérifier chaque écran à 390 px de large : pas de défilement horizontal, aucun texte < 16 px, aucune cible < 44 px.
