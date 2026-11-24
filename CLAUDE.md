@@ -117,6 +117,9 @@ et complété ; boutons « Copier » / « Lire » sur l'écran Nouveau chantier.
   avant le », photos, émetteur = profil MOE) : bouton « Envoyer la fiche à l'entreprise » sur la réserve, et proposée
   juste après la création (onglet Réserves, point de contrôle ; pas en réunion) — `components/EnvoiReserve.tsx`,
   feuille de partage iOS (Mail…).
+  **Logo des documents** (Réglages › Logo des documents, ex. SID SE) : choisi par l'utilisateur sur le téléphone
+  (jamais dans le dépôt public), PNG ≤ 800 × 400 px en data URL dans `reglages` (clé `logoDocuments`, inclus dans les
+  sauvegardes) ; chargé par `chargerChantier` (`d.logo`) et dessiné en tête de la 1ʳᵉ page de tous les PDF (`DocPdf`).
   « En retard » = échéance dépassée et statut ouvert ou relancé (une levée à vérifier attend le MOE, pas l'entreprise).
   Bouton « + » flottant sur les onglets Checklist, Réserves et Jalons. Dictée : `components/Dictee.tsx`
   (Web Speech API si disponible, sinon micro du clavier iOS).

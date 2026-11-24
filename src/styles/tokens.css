@@ -56,6 +56,7 @@
   --btn-h: 56px;        /* bouton principal */
   --fab: 64px;
   --gutter: 16px;
+  --papier: #FFFFFF; /* fond blanc des documents (aperçu du logo des PDF), identique en clair et en sombre */
   --gap-xs: 6px;
   --gap-sm: 8px;
   --gap-md: 12px;

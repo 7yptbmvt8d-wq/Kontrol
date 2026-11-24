@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArchiveRestore, RefreshCw } from 'lucide-react';
+import { ArchiveRestore, ImageIcon, RefreshCw } from 'lucide-react';
 import type JSZip from 'jszip';
 import type { Contenu, Resume } from '../services/sauvegarde';
 import { fmtDate, fmtHeure } from '../domain/dates';
@@ -11,6 +11,7 @@ import { appliquerTheme, type Theme } from '../theme';
 import { aller, retour } from '../router';
 import { SectionDrive } from './SectionDrive';
 import { enregistrerProfil, lireProfil } from '../services/profil';
+import { CLE_LOGO, type LogoDocuments } from '../services/exports/donnees';
 import { ChampsProfil } from '../components/Profil';
 
 export function Reglages() {
@@ -57,6 +58,7 @@ export function Reglages() {
           </div>
         </section>
         <SectionProfil />
+        <SectionLogo />
         <SectionDrive onRestaurer={(blob, nom) => void lireFichier(blob, nom)} />
         <section className="card stack" style={{ gap: 10 }} aria-label="Sauvegarde et restauration">
           <h2 className="sec-title">Sauvegarde sur le téléphone</h2>
@@ -143,4 +145,62 @@ function SectionProfil() {
       <button type="button" className="btn sec block tap" onClick={enregistrer}>Enregistrer</button>
     </section>
   );
+}
+
+/** Logo de l'organisme (ex. SID) en tête des documents PDF : choisi une fois, conservé sur le téléphone et dans les sauvegardes. */
+function SectionLogo() {
+  const [logo, setLogo] = useState<LogoDocuments | null | undefined>(undefined);
+  const entree = useRef<HTMLInputElement>(null);
+  useEffect(() => { void getReglage<LogoDocuments | null>(CLE_LOGO, null).then(setLogo); }, []);
+  if (logo === undefined) return null;
+  const choisir = async (f?: File) => {
+    if (!f) return;
+    try {
+      const l = await preparerLogo(f);
+      await setReglage(CLE_LOGO, l);
+      setLogo(l);
+      toast('Logo enregistré');
+    } catch {
+      toast('Image illisible : choisissez un fichier PNG ou JPEG');
+    }
+  };
+  return (
+    <section className="card stack" style={{ gap: 10 }} aria-label="Logo des documents">
+      <h2 className="sec-title">Logo des documents</h2>
+      <div className="ink2">En tête des PDF : fiche de réserve, listes de réserves, jalons, pénalités, rapport.</div>
+      {logo && (
+        <div style={{ background: 'var(--papier)', borderRadius: 12, padding: 12, display: 'flex', justifyContent: 'center' }}>
+          <img src={logo.dataUrl} alt="Logo des documents" style={{ maxWidth: '100%', maxHeight: 96, objectFit: 'contain' }} />
+        </div>
+      )}
+      <input ref={entree} type="file" accept="image/png,image/jpeg,image/*" className="sr-only" tabIndex={-1} aria-hidden
+        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void choisir(f); }} />
+      <button type="button" className="btn sec block tap" onClick={() => entree.current?.click()}>
+        <ImageIcon size={20} strokeWidth={2.2} aria-hidden />{logo ? 'Changer le logo' : 'Choisir le logo'}
+      </button>
+      {logo && (
+        <button type="button" className="btn sec block tap" onClick={async () => { await setReglage(CLE_LOGO, null); setLogo(null); toast('Logo retiré'); }}>
+          Retirer le logo
+        </button>
+      )}
+    </section>
+  );
+}
+
+/** Image réduite (800 × 400 px au plus) et convertie en PNG : transparence conservée, document léger. */
+async function preparerLogo(f: Blob): Promise<LogoDocuments> {
+  const url = URL.createObjectURL(f);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const k = Math.min(1, 800 / img.naturalWidth, 400 / img.naturalHeight);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * k));
+    c.height = Math.max(1, Math.round(img.naturalHeight * k));
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    return { dataUrl: c.toDataURL('image/png'), w: c.width, h: c.height };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

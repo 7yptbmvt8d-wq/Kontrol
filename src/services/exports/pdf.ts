@@ -5,7 +5,7 @@ import type { Reserve } from '../../domain/types';
 import { aujourdHui, contexte, datePoint, ecartJours, fmtCourt, fmtDate, fmtHeure, texteProlongations } from '../../domain/dates';
 import { ETAT_POINT, GRAVITE, PHASE_CHANTIER, PHASE_CONTROLE, bloquantNonValide, refReserve, statutAffiche, type Ton } from '../../domain/statuts';
 import { estValide, grouper, statistiques } from '../../domain/checklist';
-import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier } from './donnees';
+import { derniereAction, lignesJalons, origineTexte, statutTexte, type DonneesChantier, type LogoDocuments } from './donnees';
 import { STATUT_PENALITE, euros, pluriel } from '../../domain/penalites';
 import { TYPES, type FichierPret } from './partage';
 
@@ -57,9 +57,17 @@ async function imagePdf(id: number): Promise<Image | null> {
 class DocPdf {
   doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   y = MARGE;
-  constructor(private entete: string, private piedGauche: string) {
+  constructor(private entete: string, private piedGauche: string, logo?: LogoDocuments) {
     this.doc.setFont('helvetica');
     this.enTete();
+    // Logo de l'organisme en tête de la première page (au plus 50 × 18 mm, proportions conservées)
+    if (logo) {
+      try {
+        const k = Math.min(50 / logo.w, 18 / logo.h);
+        this.doc.addImage(logo.dataUrl, 'PNG', MARGE, 15, logo.w * k, logo.h * k, undefined, 'FAST');
+        this.y = 15 + logo.h * k + 5;
+      } catch { /* image illisible : document sans logo */ }
+    }
   }
   enTete() {
     const d = this.doc;
@@ -181,13 +189,13 @@ async function sectionReserves(doc: DocPdf, d: DonneesChantier, reserves: Reserv
 
 /** Liste de réserves (avec photos). `titre` : ex. « Réserves – METALCO ». */
 export async function pdfReserves(d: DonneesChantier, reserves: Reserve[], titre: string, nom: string, onProgres?: (n: number) => void): Promise<FichierPret> {
-  const doc = new DocPdf(enTeteChantier(d), edition());
+  const doc = new DocPdf(enTeteChantier(d), edition(), d.logo);
   await sectionReserves(doc, d, reserves, titre, true, onProgres);
   return { nom, blob: doc.terminer() };
 }
 
 export function pdfJalons(d: DonneesChantier, nom: string): FichierPret {
-  const doc = new DocPdf(enTeteChantier(d), edition());
+  const doc = new DocPdf(enTeteChantier(d), edition(), d.logo);
   sectionJalons(doc, d);
   return { nom, blob: doc.terminer() };
 }
@@ -227,7 +235,7 @@ function sectionJalons(doc: DocPdf, d: DonneesChantier) {
 
 /** Registre des pénalités appliquées, par marché (pour notification ou décompte). */
 export function pdfPenalites(d: DonneesChantier, nom: string): FichierPret {
-  const doc = new DocPdf(enTeteChantier(d), edition());
+  const doc = new DocPdf(enTeteChantier(d), edition(), d.logo);
   sectionPenalites(doc, d);
   return { nom, blob: doc.terminer() };
 }
@@ -358,7 +366,7 @@ function sectionChecklist(doc: DocPdf, d: DonneesChantier) {
 
 /** Rapport complet du chantier : synthèse, checklist, réserves (sans photos), jalons, pénalités appliquées. */
 export async function pdfRapport(d: DonneesChantier, nom: string): Promise<FichierPret> {
-  const doc = new DocPdf(enTeteChantier(d), edition());
+  const doc = new DocPdf(enTeteChantier(d), edition(), d.logo);
   sectionSynthese(doc, d);
   doc.nouvellePage();
   sectionChecklist(doc, d);
@@ -381,7 +389,7 @@ export interface Emetteur { nom: string; fonction: string; organisme: string }
 /** Fiche d'une réserve pour l'entreprise : marché, constat, échéance de levée, photos, émetteur. */
 export async function pdfFicheReserve(d: DonneesChantier, r: Reserve, nom: string, emetteur?: Emetteur): Promise<FichierPret> {
   const ref = aujourdHui();
-  const doc = new DocPdf(enTeteChantier(d), edition());
+  const doc = new DocPdf(enTeteChantier(d), edition(), d.logo);
   const pdf = doc.doc;
   const lot = d.lots.find((l) => l.code === r.lotCode);
 

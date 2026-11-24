@@ -41,13 +41,22 @@ test('OS n° 1, alerte « OPR à programmer » et prolongation de délai', async
   await expect(page.locator('.tl li', { hasText: /Fin du délai d.exécution/ })).toContainText('de prolongation');
 });
 
-test('réserve avec photo prise dans la photothèque, fiche PDF pour l’entreprise', async ({ page, browser }) => {
+test('réserve avec photo prise dans la photothèque, fiche PDF avec logo pour l’entreprise', async ({ page, browser }) => {
   await importerExemple(page);
   // Photo de test : capture d'un bloc de couleur
   const atelier = await browser.newPage({ viewport: { width: 800, height: 600 } });
   await atelier.setContent('<div style="width:800px;height:600px;background:#a63"></div>');
   const photo = await atelier.screenshot({ type: 'jpeg' });
   await atelier.close();
+
+  // Logo de l'organisme pour l'en-tête des PDF (Réglages)
+  const logo = await browser.newPage({ viewport: { width: 400, height: 160 } });
+  await logo.setContent('<div style="width:400px;height:160px;background:#1d4ed8;color:#fff;font:bold 64px sans-serif">SID</div>');
+  const png = await logo.screenshot({ type: 'png' });
+  await logo.close();
+  await page.goto('#/reglages');
+  await page.getByRole('region', { name: 'Logo des documents' }).locator('input[type=file]').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByRole('img', { name: 'Logo des documents' })).toBeVisible();
 
   await page.goto('#/chantier/1/reserves');
   await page.getByRole('button', { name: 'Nouvelle réserve' }).click();
@@ -65,6 +74,8 @@ test('réserve avec photo prise dans la photothèque, fiche PDF pour l’entrepr
   expect(pdf.suggestedFilename()).toMatch(/^Reserve-R-01-.+\.pdf$/);
   const { size } = await import('node:fs').then((fs) => pdf.path().then((p) => fs.statSync(p)));
   expect(size).toBeGreaterThan(10_000); // avec la photo
+  const contenu = await import('node:fs').then((fs) => pdf.path().then((p) => fs.readFileSync(p, 'latin1')));
+  expect(contenu.match(/\/Subtype \/Image/g)?.length ?? 0).toBeGreaterThanOrEqual(2); // photo + logo
 
   await expect(page.locator('a.res', { hasText: 'Fissure enduit façade nord' })).toBeVisible();
   await page.locator('a.res', { hasText: 'Fissure enduit façade nord' }).click();
